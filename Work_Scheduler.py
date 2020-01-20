@@ -4,7 +4,7 @@ import copy
 import datetime
 
 start_2020_01_01_B = datetime.datetime(2020, 1, 1)  # 1월 1일 근무조
-today = datetime.datetime(2020, 1, 14)  # 오늘 날짜
+today = datetime.datetime(2020, 1, 13)  # 오늘 날짜
 which_group = ((today - start_2020_01_01_B).days + 1) % 3  # 나머지 0이면 A, 1이면 B, 2이면 C
 work_group = {0: 'A', 1: 'B', 2: 'C'}  # workgroup 에 which_group을 대입하면 오늘 무슨 조인지 문자로 파악 가능
 is_weekend = int(today.weekday() / 5) + 1  # 오늘 주말인지 아닌지 1이면 평일, 2이면 주말
@@ -25,6 +25,7 @@ WorkC_weekend = [8, 8, 8, 6]
 Timetable = [[TimeA, WorkA, WorkA_weekend],
              [TimeB, WorkB, WorkB_weekend],
              [TimeC, WorkC, WorkC_weekend]]  # 배열로 묶어서 저장
+
 placeA = [[2, 2, 2, 1], [5, 3, 2, 1], [3, 2, 2, 1], [2, 2, 1, 1]]  # 정출, 별정, 별후, 서남문 순서
 placeB = [[5, 3, 2, 1], [5, 3, 2, 1], [2, 2, 1, 1], [2, 2, 1, 1]]
 placeC = [[5, 3, 2, 1], [5, 3, 2, 1], [5, 3, 2, 1], [2, 2, 1, 1]]
@@ -80,10 +81,9 @@ p2 = [a1, a2, a3, a4, a5, a6, a7, a8,
       a16, a17, a18, a19, a20, a21]
 
 
-
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2):
-    acci = ['Member01','Member06','Member21','Member14','Member17']#input("사고자 입력 : ").split()
+    acci = ['Member01','Member06','Member21','Member14','Member17','Member11','Member10','Member08']#input("사고자 입력 : ").split()
     out = ['Member11'] #("외출자 입력 : ").split()
     real_worker, accident, outing = [], [], []
     for member in p2:
@@ -95,20 +95,22 @@ def whos_out(p2):
         if (member not in accident) and (member not in outing):
             real_worker.append(member)
 
-    return real_worker, outing, accident
+    return real_worker, outing, accident #외출, 사고 없는 실 근무자, 외출자, 사고자
 
 
-# 긴밤자 입력
+# 긴밤자 결정
 def whos_long_night(hes_2, temp_work, long_night_size):
     long_nighter = []
-    for i in range(long_night_size):
-        long_night = random.choice(hes_2)
-        if long_night not in long_nighter:
-            temp_work[0].append(long_night)
-            long_night.wheres_he[0] = 1
-            temp_work[1].append(long_night)
-            long_night.wheres_he[1] = 1
-            long_nighter.append(long_night)
+    for __ in range(long_night_size):
+        while True:
+            chosen = random.choice(hes_2)
+            if chosen not in long_nighter:
+                temp_work[0].append(chosen)
+                temp_work[1].append(chosen)
+                chosen.wheres_he[0] = 1
+                chosen.wheres_he[1] = 1
+                long_nighter.append(chosen)
+                break
 
     return temp_work, long_nighter
 
@@ -119,48 +121,51 @@ def whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work):
     size_2 = real_worker_size * 3 - sum(max_work) + len(outing)  # 2타자 수
     size_3 = real_worker_size - size_2  # 3타자 수
     no_return_work = []  # 복귀타 없는 외출자
+    hes_3, hes_2, long_nighter = [], [], [] #3타자, 2타자, 긴밤자
 
-    if today_group != 'B' and max_work[3] - len(outing) < 0:  # 외출자 수가 막타 수 보다 많을 때
+    if today_group != 'B' and (max_work[3] - len(outing)) < 0:  # 외출자 수가 막타 수 보다 많을 때
         for i in range(abs(max_work[3] - len(outing))):
             lucky_man = random.choice(outing)
             outing.remove(lucky_man)
+            accident.append(lucky_man)
             no_return_work.append(lucky_man)
         for poor_man in outing:
             poor_man.wheres_he[3] = 1
-
     elif today_group == 'B' and max_work[2] + max_work[3] - len(outing) < 0:
         for i in range(abs(max_work[2] + max_work[3] - len(outing))):
             lucky_man = random.choice(outing)
             outing.remove(lucky_man)
+            accident.append(lucky_man)
             no_return_work.append(lucky_man)
         for poor_man in outing:
             poor_man.wheres_he[3] = 1
-
     else: #위 경우 둘다 해당하지 않을 때는 외출자는 막타 픽스
         for i in outing:
             i.wheres_he[3] = 1
 
-    if is_weekend == 2:
+
+    if is_weekend == 2: #주말에는 size_2가 2타자 +복귀타 없는 외출자로 계산되서 빼줌
         size_2 -= len(no_return_work)
         size_3 = real_worker_size - size_2
 
-    if today_group != 'B':
-        max_work[3] = max_work[3] - len(outing)
-    else:
-        temp_work[3] = outing
-
-    hes_3, hes_2, long_nighter = [], [], []
+    if today_group != 'B': #외출자들 막타 배정
+        if max_work[3] - len(outing) < 0: #B조에서 복귀타 수가 막타자(4시근무) 수 초과 시
+            max_work[2] -= len(outing)-max_work[3]
+            max_work[3] -= max_work[3]
+        else:
+            max_work[3] = max_work[3] - len(outing)
+    else: #a,c조에서는 이미 잘려서 괜찮다
+        temp_work[3] = copy.deepcopy(outing) #배열 깊은 복사
 
     if size_2 > 0 and is_weekend == 1:  # 2타자 자동 계산
-        start_2 = 'Member12'#input("2타 시작 입력 : ")
+        start_2 = 'Member12' #input("2타 시작 입력 : ")
         for member in real_worker:
             if member.name == start_2:
                 index = real_worker.index(member)
                 for i in range(size_2):
                     hes_2.append(real_worker[(i + index) % real_worker_size])
                 break
-
-    elif size_2 > 0 and is_weekend == 2:  # 2타자 랜덤 추첨
+    elif size_2 > 0 and is_weekend == 2:  # 주말 2타자 랜덤 추첨
         temp = []
         for i in range(size_2):
             lucky_man = random.choice(real_worker)
@@ -199,7 +204,6 @@ def overtime(max_work, temp_work):  # max_work: 오늘 근무 최대 타수, tem
     check = [0] * len(max_work)  # 각 시간에 초과, 미달한 사람들 수 저장
     for i in range(len(max_work)):
         check[i] = max_work[i] - len(temp_work[i])  # 초과하면 음수 미달 양수
-
     return check
 
 
@@ -233,7 +237,7 @@ def re_people(check, size_2, today_group):
 def re_arrange(max_work, temp_work, check, today_group, start=0):
     for i in range(len(max_work)):  # 6 4 8 12 근무 시간대 별로 돌린다.
         if check[i] < 0:  # 지금 시간대에 배치된 사람이 만약 최대 근무타수를 초과한다면 음수 이므로 if돌린다
-            for j in range(abs(check[i])):  # 넘은 사람만큼 빼내야 하므로 넘은 사람만큼 루프를 돌린다. 음수를 넣을순 없으니 절댓값
+            for __ in range(abs(check[i])):  # 넘은 사람만큼 빼내야 하므로 넘은 사람만큼 루프를 돌린다. 음수를 넣을순 없으니 절댓값
                 while True:
                     poor_man = random.choice(temp_work[i])  # 지금 시간대에서 랜덤으로 한명을 뽑는다.
                     if today_group == 'B':
@@ -261,7 +265,7 @@ def re_arrange_2(temp_work, check, today_group, start=0):
     while True:  # 여기서는 타겟 명수로 배치되기 전까지는 함수가 끝나지 않는다.
         for i in range(len(check)):
             if check[i] < 0:
-                for j in range(abs(check[i])):
+                for __ in range(abs(check[i])):
                     while True:
                         poor_man = random.choice(temp_work[i])
                         if today_group == 'B':
@@ -342,13 +346,12 @@ def scheduler():
     true_real_worker = real_worker
     temp_work = [[], [], [], []]  # 세타 근무 들어간 사람
     temp_work_2 = [[], [], [], []]  # 두타 근무 들어간 사람
-    hes_3, hes_2, temp_work, max_work, outing, size_2 = whos_3_2(real_worker, outing, today_group, accident, temp_work,
-                                                                 max_work)
+    hes_3, hes_2, temp_work, max_work, outing, size_2 = whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work)
+
     # 3타자, 2타자
     for worker in hes_3:  # 3타자 우선
         for i in range(3):
-            temp_work[today_time.index(worker.times3[today_group][i])].append(worker)
-            # temp_work에 3타자의 선호 근무대로 객체 입력
+            temp_work[today_time.index(worker.times3[today_group][i])].append(worker)  # temp_work에 3타자의 선호 근무대로 객체 입력
             worker.wheres_he[today_time.index(worker.times3[today_group][i])] = 1  # 객체 내부 변수에 현재 객체의 들어간 근무 입력
 
     check = overtime(max_work, temp_work)  # 들어간 사람들 중에서 최대 근무 타수 중에서 얼마나 초과, 미달했는지 리스트
@@ -569,4 +572,3 @@ result=schedule_place(real_worker)
 for h in result:
     print(h.name,end=' ')
     whatis_hwork(h.work)
-
