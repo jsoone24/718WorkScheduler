@@ -121,6 +121,7 @@ def whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work):
     size_2 = real_worker_size * 3 - sum(max_work) + len(outing)  # 2타자 수
     size_3 = real_worker_size - size_2  # 3타자 수
     no_return_work = []  # 복귀타 없는 외출자
+    hes_3, hes_2, long_nighter = [], [], [] #3타자, 2타자, 긴밤자
 
     if today_group != 'B' and (max_work[3] - len(outing)) < 0:  # 외출자 수가 막타 수 보다 많을 때
         for i in range(abs(max_work[3] - len(outing))):
@@ -138,7 +139,6 @@ def whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work):
             no_return_work.append(lucky_man)
         for poor_man in outing:
             poor_man.wheres_he[3] = 1
-
     else: #위 경우 둘다 해당하지 않을 때는 외출자는 막타 픽스
         for i in outing:
             i.wheres_he[3] = 1
@@ -148,12 +148,14 @@ def whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work):
         size_2 -= len(no_return_work)
         size_3 = real_worker_size - size_2
 
-    if today_group != 'B':
-        max_work[3] = max_work[3] - len(outing)
-    else:
-        temp_work[3] = outing
-
-    hes_3, hes_2, long_nighter = [], [], []
+    if today_group != 'B': #외출자들 막타 배정
+        if max_work[3] - len(outing) < 0: #B조에서 복귀타 수가 막타자(4시근무) 수 초과 시
+            max_work[2] -= len(outing)-max_work[3]
+            max_work[3] -= max_work[3]
+        else:
+            max_work[3] = max_work[3] - len(outing)
+    else: #a,c조에서는 이미 잘려서 괜찮다
+        temp_work[3] = copy.deepcopy(outing) #배열 깊은 복사
 
     if size_2 > 0 and is_weekend == 1:  # 2타자 자동 계산
         start_2 = 'Member12' #input("2타 시작 입력 : ")
@@ -163,7 +165,6 @@ def whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work):
                 for i in range(size_2):
                     hes_2.append(real_worker[(i + index) % real_worker_size])
                 break
-
     elif size_2 > 0 and is_weekend == 2:  # 주말 2타자 랜덤 추첨
         temp = []
         for i in range(size_2):
@@ -345,13 +346,12 @@ def scheduler():
     true_real_worker = real_worker
     temp_work = [[], [], [], []]  # 세타 근무 들어간 사람
     temp_work_2 = [[], [], [], []]  # 두타 근무 들어간 사람
-    hes_3, hes_2, temp_work, max_work, outing, size_2 = whos_3_2(real_worker, outing, today_group, accident, temp_work,
-                                                                 max_work)
+    hes_3, hes_2, temp_work, max_work, outing, size_2 = whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work)
+
     # 3타자, 2타자
     for worker in hes_3:  # 3타자 우선
         for i in range(3):
-            temp_work[today_time.index(worker.times3[today_group][i])].append(worker)
-            # temp_work에 3타자의 선호 근무대로 객체 입력
+            temp_work[today_time.index(worker.times3[today_group][i])].append(worker)  # temp_work에 3타자의 선호 근무대로 객체 입력
             worker.wheres_he[today_time.index(worker.times3[today_group][i])] = 1  # 객체 내부 변수에 현재 객체의 들어간 근무 입력
 
     check = overtime(max_work, temp_work)  # 들어간 사람들 중에서 최대 근무 타수 중에서 얼마나 초과, 미달했는지 리스트
@@ -379,7 +379,7 @@ def scheduler():
 
 scheduled_work, real_worker, outing = scheduler()
 real_worker= real_worker+outing
-'''
+
 def lets_make_rank(args):  # 리스트 셔플하기
     h_list = []
     for h in args:
@@ -572,5 +572,3 @@ result=schedule_place(real_worker)
 for h in result:
     print(h.name,end=' ')
     whatis_hwork(h.work)
-
-'''
