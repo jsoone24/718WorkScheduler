@@ -4,7 +4,7 @@ import Work_Scheduler
 
 # 오늘 무슨 조인지
 start_2020_01_01_B = datetime.datetime(2020, 1, 1)  # 1월 1일 근무조
-today = datetime.datetime(2020, 1, 14)  # 오늘 날짜
+today = datetime.datetime(2020, 1, 13)  # 오늘 날짜
 which_group = ((today - start_2020_01_01_B).days + 1) % 3  # 나머지 0이면 A, 1이면 B, 2이면 C
 work_group = {0: 'A', 1: 'B', 2: 'C'}  # workgroup 에 which_group을 대입하면 오늘 무슨 조인지 문자로 파악 가능
 is_weekend = int(today.weekday() / 5) + 1  # 오늘 주말인지 아닌지 1이면 평일, 2이면 주말
