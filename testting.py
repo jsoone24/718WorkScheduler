@@ -4,7 +4,7 @@ import copy
 import datetime
 
 start_2020_01_01_B = datetime.datetime(2020, 1, 1)  # 1월 1일 근무조
-today = datetime.datetime(2020, 1, 13)  # 오늘 날짜
+today = datetime.datetime(2020, 1, 14)  # 오늘 날짜
 which_group = ((today - start_2020_01_01_B).days + 1) % 3  # 나머지 0이면 A, 1이면 B, 2이면 C
 work_group = {0: 'A', 1: 'B', 2: 'C'}  # workgroup 에 which_group을 대입하면 오늘 무슨 조인지 문자로 파악 가능
 is_weekend = int(today.weekday() / 5) + 1  # 오늘 주말인지 아닌지 1이면 평일, 2이면 주말
@@ -83,7 +83,7 @@ p2 = [a1, a2, a3, a4, a5, a6, a7, a8,
 
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2):
-    acci = ['Member01','Member06','Member21','Member08','Member02']#input("사고자 입력 : ").split()
+    acci = ['Member01','Member08','Member02']#input("사고자 입력 : ").split()
     out = ['Member11','Member07'] #("외출자 입력 : ").split()
     real_worker, accident, outing = [], [], []
     for member in p2:
@@ -148,7 +148,7 @@ def whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work):
         size_2 -= len(no_return_work)
         size_3 = real_worker_size - size_2
 
-    if today_group != 'B': #외출자들 막타 배정
+    if today_group == 'B': #외출자들 막타 배정
         if max_work[3] - len(outing) < 0: #B조에서 복귀타 수가 막타자(4시근무) 수 초과 시
             max_work[2] -= len(outing)-max_work[3]
             max_work[3] -= max_work[3]
@@ -403,23 +403,21 @@ def make_column_list(mat, n):
     return list
 
 def jung_2times(workers, poor_man, max_place):
-
-            place_number = [1, 2, 3]
-            unlucky = poor_man.wheres_he[:]
-
-            max_place[unlucky.index(1)][0] -= 1  # unluck.index(1)은 첫번째 근무 시간
-            poor_man.work[0][unlucky.index(1)] = 1
-            unlucky.remove(1)
-            a = random.choice(place_number)
-            max_place[unlucky.index(1) + 1][a] -= 1
-            poor_man.work[a][unlucky.index(1) + 1] = 1
-            unlucky.remove(1)
-            max_place[unlucky.index(1) + 2][0] -= 1
-            poor_man.work[0][unlucky.index(1) + 2] = 1
-            # print(workers[i].work, end="\n")
-            print(poor_man.name, end=' ')
-            whatis_hwork(poor_man.work)
-            workers.remove(poor_man)
+    place_number = [1, 2, 3]
+    unlucky = poor_man.wheres_he[:]
+    max_place[unlucky.index(1)][0] -= 1  # unluck.index(1)은 첫번째 근무 시간
+    poor_man.work[0][unlucky.index(1)] = 1
+    unlucky.remove(1)
+    a = random.choice(place_number)
+    max_place[unlucky.index(1) + 1][a] -= 1
+    poor_man.work[a][unlucky.index(1) + 1] = 1
+    unlucky.remove(1)
+    max_place[unlucky.index(1) + 2][0] -= 1
+    poor_man.work[0][unlucky.index(1) + 2] = 1
+    # print(workers[i].work, end="\n")
+    print(poor_man.name, end=' ')
+    whatis_hwork(poor_man.work)
+    workers.remove(poor_man)
 
 
 def jung_rearrange(workers, temp_jung ,max_place, start=0):
@@ -470,83 +468,90 @@ def jung_rearrange(workers, temp_jung ,max_place, start=0):
 
 
 def schedule_place(workers,outing):
-
-    count = 0
-    workers=lets_make_rank(workers)
-    outing=lets_make_rank(outing)
-    len_outing=len(outing[:])
-    max_place = placetable[which_group][is_weekend - 1]
-    deter = 0
-    temp_jung=[[],[],[],[]] #정출에 들어가는 사람 리스트
-    if work_group[which_group]=='B':  #외출자 수 계산 후 정출 들어갈 외출자 pick
-        if len(outing)<=4:
-            workers = workers+outing
-            outing = []
-
-        else:
-            workers = workers+outing[0:4]
-            outing = outing[4:]
-    else:
-        if len(outing)<=2:
-            workers = workers + outing
-            outing = []
-
-        else:
-            workers = workers + outing[0:2]
-            outing = outing[2:]
-
-    if int(sum([max_place[i][0] for i in range(4)])) >= len(workers):# 현 근무자수보다 정출 타수가 많거나 같을 경우
-        poors = abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers))
-        if len_outing>=2:
-            for __ in range(poors):
-                for i in range(len(workers)):
-                    if sum(workers[i].wheres_he) == 3 and workers[i].wheres_he[3]==0:  # 3타자 중에서 정출을 두번 줌
-                        jung_2times(workers, workers[i], max_place)
-                        break
-        else:
-            for __ in range(poors):
-                for i in range(len(workers)):
-                    if sum(workers[i].wheres_he) == 3:  # 3타자 중에서 정출을 두번 줌
-                        jung_2times(workers, workers[i], max_place)
-                        break
-
-        jung_rearrange(workers, temp_jung, max_place)
-
-    elif int(sum([max_place[i][0] for i in range(4)])) < len(workers): #현 근무자가 타수보다 많을 경우
-        no_jung= abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers))
-        temp_workers = workers[0:len(workers)-no_jung]
-
-
-        jung_rearrange(temp_workers, temp_jung, max_place)
-
-    # 정출 제외한 근무지 무한 루프
-    workers = workers + outing
-    real_workers=copy.deepcopy(workers)
-    r_max_place=copy.deepcopy(max_place)
     while True:
-        for h in real_workers:
-            n = 0
-            for t in h.wheres_he:
-                if t == 1:
-                    a = random_index_except_zero(r_max_place[n])
-                    r_max_place[n][a] = r_max_place[n][a] - 1
-                    h.work[a][n] = h.work[a][n] + 1
-                    n += 1
-                else:
-                    n += 1
-            for list in h.work:
-                if sum(list) >= 2:
-                    deter += 1
+        count = 0
+        workers=lets_make_rank(workers)
+        outing=lets_make_rank(outing)
+        len_outing=len(outing[:])
+        max_place = placetable[which_group][is_weekend - 1]
+        deter = 0
+        escape = True
+        temp_jung=[[],[],[],[]] #정출에 들어가는 사람 리스트
+        if work_group[which_group]=='B':  #외출자 수 계산 후 정출 들어갈 외출자 pick
+            if len(outing)<=4:
+                workers = workers+outing
+                outing = []
 
-        if deter == 0:
-            print(count)
+            else:
+                workers = workers+outing[0:4]
+                outing = outing[4:]
+        else:
+            if len(outing)<=2:
+                workers = workers + outing
+                outing = []
+
+            else:
+                workers = workers + outing[0:2]
+                outing = outing[2:]
+
+        if int(sum([max_place[i][0] for i in range(4)])) >= len(workers):# 현 근무자수보다 정출 타수가 많거나 같을 경우
+            poors = abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers))
+            if len_outing>=2:
+                for __ in range(poors):
+                    for i in range(len(workers)):
+                        if sum(workers[i].wheres_he) == 3 and workers[i].wheres_he[3]==0:  # 3타자 중에서 정출을 두번 줌
+                            jung_2times(workers, workers[i], max_place)
+                            break
+            else:
+                for __ in range(poors):
+                    for i in range(len(workers)):
+                        if sum(workers[i].wheres_he) == 3:  # 3타자 중에서 정출을 두번 줌
+                            jung_2times(workers, workers[i], max_place)
+                            break
+
+            jung_rearrange(workers, temp_jung, max_place)
+
+        elif int(sum([max_place[i][0] for i in range(4)])) < len(workers): #현 근무자가 타수보다 많을 경우
+            no_jung= abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers))
+            temp_workers = workers[0:len(workers)-no_jung]
+
+
+            jung_rearrange(temp_workers, temp_jung, max_place)
+
+        # 정출 제외한 근무지 무한 루프
+        workers = workers + outing
+        real_workers=copy.deepcopy(workers)
+        r_max_place=copy.deepcopy(max_place)
+        while True:
+            for h in real_workers:
+                n = 0
+                for t in h.wheres_he:
+                    if t == 1:
+                        a = random_index_except_zero(r_max_place[n])
+                        r_max_place[n][a] = r_max_place[n][a] - 1
+                        h.work[a][n] = h.work[a][n] + 1
+                        n += 1
+                    else:
+                        n += 1
+                for list in h.work:
+                    if sum(list) >= 2:
+                        deter += 1
+
+            if deter == 0:
+                print(count)
+                break
+
+            else:
+                real_workers=copy.deepcopy(workers)
+                r_max_place = copy.deepcopy(max_place)
+                count+=1 #w
+                deter=0
+                if count == 500:
+                    escape=False  #count가 적당히 커지면 어차피 안되는 거니까 함수 처음부터 다시 돌리기
+                    break
+        if escape==True:
             break
 
-        else:
-            real_workers=copy.deepcopy(workers)
-            r_max_place = copy.deepcopy(max_place)
-            count+=1 #w
-            deter=0
 
 
     return real_workers
