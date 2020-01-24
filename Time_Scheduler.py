@@ -216,12 +216,12 @@ def re_arrange_2(temp_work_t, check_t, today_group, start=0):
                     return temp_work
 
 
-def re_assign(max_work, temp_work_t, check_t, today_group, size_2):
-    check = copy.deepcopy(check_t)
-    temp_work = copy.deepcopy(temp_work_t)
+def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2):
     if today_group != 'B':
         while True:
             try:
+                check = copy.deepcopy(check_tt)
+                temp_work = copy.deepcopy(temp_work_tt)
                 temp_work = re_arrange(max_work, temp_work, check, today_group)
                 if temp_work == -1:
                     raise NotImplementedError
@@ -242,11 +242,20 @@ def re_assign(max_work, temp_work_t, check_t, today_group, size_2):
 
     else:
         for i in range(2):
-            temp_work_t = [temp_work[2 * i], temp_work[2 * i + 1]]
-            max_work_t = [max_work[2 * i], max_work[2 * i + 1]]
-            check_t = [check[2 * i], check[2 * i + 1]]
+            while True:
+                try:
+                    temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
+                    max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
+                    check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
 
-            temp_work_t = re_arrange(max_work_t, temp_work_t, check_t, today_group, 2 * i)
+                    temp_work_t = re_arrange(max_work_t, temp_work_t, check_t, today_group, 2 * i)
+                    if temp_work_t == -1:
+                        raise NotImplementedError
+                    else:
+                        break
+                except:
+                    pass
+
             check_t = overtime(max_work_t, temp_work_t)
             target_t = re_people(check_t, size_2, today_group)
             # if max(check_t) != sum(check_t) - max(check_t):
@@ -257,9 +266,11 @@ def re_assign(max_work, temp_work_t, check_t, today_group, size_2):
             temp_work_t = re_arrange_2(temp_work_t, check_t, today_group, 2 * i)
             check_t = overtime(max_work_t, temp_work_t)  # 현재 얼마나 넘었는지 체크 이는 3타자 배열이 끝나고 2타자 배열 최대 근무 타수에 이용된다.
 
-            check[2 * i], check[2 * i + 1] = check_t[0], check_t[1]
-            temp_work[2 * i], temp_work[2 * i + 1] = temp_work_t[0], temp_work_t[1]
-            check = overtime(max_work, temp_work)
+            check_tt[2 * i], check_tt[2 * i + 1] = check_t[0], check_t[1]
+            temp_work_tt[2 * i], temp_work_tt[2 * i + 1] = temp_work_t[0], temp_work_t[1]
+            check = overtime(max_work, temp_work_tt)
+        check = check_tt
+        temp_work = temp_work_tt
 
     return temp_work, check
 
