@@ -403,23 +403,21 @@ def make_column_list(mat, n):
     return list
 
 def jung_2times(workers, poor_man, max_place):
-
-            place_number = [1, 2, 3]
-            unlucky = poor_man.wheres_he[:]
-
-            max_place[unlucky.index(1)][0] -= 1  # unluck.index(1)은 첫번째 근무 시간
-            poor_man.work[0][unlucky.index(1)] = 1
-            unlucky.remove(1)
-            a = random.choice(place_number)
-            max_place[unlucky.index(1) + 1][a] -= 1
-            poor_man.work[a][unlucky.index(1) + 1] = 1
-            unlucky.remove(1)
-            max_place[unlucky.index(1) + 2][0] -= 1
-            poor_man.work[0][unlucky.index(1) + 2] = 1
-            # print(workers[i].work, end="\n")
-            print(poor_man.name, end=' ')
-            whatis_hwork(poor_man.work)
-            workers.remove(poor_man)
+    place_number = [1, 2, 3]
+    unlucky = poor_man.wheres_he[:]
+    max_place[unlucky.index(1)][0] -= 1  # unluck.index(1)은 첫번째 근무 시간
+    poor_man.work[0][unlucky.index(1)] = 1
+    unlucky.remove(1)
+    a = random.choice(place_number)
+    max_place[unlucky.index(1) + 1][a] -= 1
+    poor_man.work[a][unlucky.index(1) + 1] = 1
+    unlucky.remove(1)
+    max_place[unlucky.index(1) + 2][0] -= 1
+    poor_man.work[0][unlucky.index(1) + 2] = 1
+    # print(workers[i].work, end="\n")
+    print(poor_man.name, end=' ')
+    whatis_hwork(poor_man.work)
+    workers.remove(poor_man)
 
 
 def jung_rearrange(workers, temp_jung ,max_place, start=0):
