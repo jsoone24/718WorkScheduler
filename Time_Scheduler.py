@@ -4,8 +4,8 @@ import copy
 
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2, today_group, max_work):
-    acci = ['Member01', 'Member21', 'Member20']  # input("사고자 입력 : ").split()
-    out = ['Member11', 'Member06', 'Member08', 'Member14', 'Member17', 'Member10']  # ("외출자 입력 : ").split()
+    acci = ['Member01', 'Member21', 'Member20','Member11', 'Member06', 'Member08']  # input("사고자 입력 : ").split()
+    out = [ 'Member17', 'Member10', 'Member14']  # ("외출자 입력 : ").split()
     real_worker, accident, outing, no_return_work = [], [], [], []
 
     for member in p2:
@@ -63,7 +63,6 @@ def whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work, is
     size_2 = real_worker_size * 3 - sum(max_work) + len(outing)  # 2타자 수
     size_3 = real_worker_size - size_2  # 3타자 수
     hes_3, hes_2, long_nighter = [], [], []  # 3타자, 2타자, 긴밤자
-    # temp_work[3] = copy.deepcopy(outing)
 
     if is_weekend == 2:  # 주말에는 size_2가 2타자 + 복귀타 없는 외출자로 계산되서 빼줌
         size_2 -= len(no_return_work)
@@ -219,16 +218,11 @@ def re_arrange_2(temp_work_t, check_t, today_group, start=0):
 def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2):
     if today_group != 'B':
         while True:
-            try:
-                check = copy.deepcopy(check_tt)
-                temp_work = copy.deepcopy(temp_work_tt)
-                temp_work = re_arrange(max_work, temp_work, check, today_group)
-                if temp_work == -1:
-                    raise NotImplementedError
-                else:
-                    break
-            except:
-                pass
+            check = copy.deepcopy(check_tt)
+            temp_work = copy.deepcopy(temp_work_tt)
+            temp_work = re_arrange(max_work, temp_work, check, today_group)
+            if temp_work != -1:
+                break
 
         # 일단 선호 근무대로 들어간 사람들이 최대 근무 타수를 넘었는지 체크하고 넘었다면 넘지 않도록 재배열
         check = overtime(max_work, temp_work)  # re_arrange에서 재배열된 사람들이 현재 최대 타수를 넘는지 체크
@@ -243,18 +237,13 @@ def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2):
     else:
         for i in range(2):
             while True:
-                try:
-                    temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
-                    max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
-                    check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
+                temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
+                max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
+                check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
 
-                    temp_work_t = re_arrange(max_work_t, temp_work_t, check_t, today_group, 2 * i)
-                    if temp_work_t == -1:
-                        raise NotImplementedError
-                    else:
-                        break
-                except:
-                    pass
+                temp_work_t = re_arrange(max_work_t, temp_work_t, check_t, today_group, 2 * i)
+                if temp_work_t != -1:
+                    break
 
             check_t = overtime(max_work_t, temp_work_t)
             target_t = re_people(check_t, size_2, today_group)
@@ -303,9 +292,7 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
     true_real_worker = real_worker
     temp_work = [[], [], [], []]  # 세타 근무 들어간 사람
     temp_work_2 = [[], [], [], []]  # 두타 근무 들어간 사람
-    hes_3, hes_2, temp_work, max_work, outing, size_2, long_nighter = whos_3_2(real_worker, outing, today_group,
-                                                                               accident, temp_work,
-                                                                               max_work, is_weekend, p2, no_return_work)
+    hes_3, hes_2, temp_work, max_work, outing, size_2, long_nighter = whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work, is_weekend, p2, no_return_work)
 
     # 3타자, 2타자
     for worker in hes_3:  # 3타자 우선
@@ -341,7 +328,6 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
     for i in range(4):
         temp_work[i] += temp_work_2[i]
 
-    print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_2, hes_3,
-               long_nighter)
+    print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_2, hes_3, long_nighter)
 
     return temp_work, true_real_worker, outing

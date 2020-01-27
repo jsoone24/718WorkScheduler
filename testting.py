@@ -376,7 +376,6 @@ def scheduler():
 
     return temp_work, true_real_worker, outing
 
-
 def lets_make_rank(args):  # 리스트 셔플하기
     h_list = []
     for h in args:
