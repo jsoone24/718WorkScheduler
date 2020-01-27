@@ -11,7 +11,6 @@ p2 = copy.deepcopy(constants.p2)
 
 
 scheduled_work, real_worker, outing = Time_Scheduler.scheduler(Timetable, which_group, work_group, is_weekend, p2)
-real_worker += outing
 result = Work_Scheduler. schedule_place(real_worker, outing)
 
 for h in result:

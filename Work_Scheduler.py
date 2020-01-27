@@ -89,7 +89,7 @@ def jung_rearrange(workers, temp_jung, max_place):
                         break
                     
                     count+=1
-                    if count>100:
+                    if count>30:
                       return -1
                         
                         
