@@ -4,15 +4,16 @@ import copy
 
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2, today_group, max_work):
-    acci = ['Member01', 'Member21', 'Member20']  # input("사고자 입력 : ").split()
-    out = ['Member11', 'Member06', 'Member08', 'Member14', 'Member17', 'Member10']  # ("외출자 입력 : ").split()
-    real_worker, accident, outing, no_return_work = [], [], [], []
+    acci = ['Member01', 'Member08']  # input("사고자 입력 : ").split()
+    out = ['Member17', 'Member10', ]  # ("외출자 입력 : ").split()'Member14', 'Member21', 'Member20', 'Member11', 'Member06'
+    real_worker, accident, outing, no_return_work, raw_outing = [], [], [], [], []
 
     for member in p2:
         if member.name in acci:
             accident.append(member)
         if member.name in out:
             outing.append(member)
+            raw_outing.append(member)
     for member in p2:
         if (member not in accident) and (member not in outing):
             real_worker.append(member)
@@ -21,7 +22,6 @@ def whos_out(p2, today_group, max_work):
         for i in range(abs(max_work[3] - len(outing))):  # 막타자 수에서 외출자 수 빼고 그 사람 수 만큼 복귀타 없는 외출자 랜덤 선정
             lucky_man = random.choice(outing)
             outing.remove(lucky_man)
-            accident.append(lucky_man)
             no_return_work.append(lucky_man)
         for poor_man in outing:
             poor_man.wheres_he[3] = 1
@@ -29,7 +29,6 @@ def whos_out(p2, today_group, max_work):
         for i in range(abs(max_work[2] + max_work[3] - len(outing))):
             lucky_man = random.choice(outing)
             outing.remove(lucky_man)
-            accident.append(lucky_man)
             no_return_work.append(lucky_man)
         for poor_man in outing:
             poor_man.wheres_he[3] = 1
@@ -37,7 +36,7 @@ def whos_out(p2, today_group, max_work):
         for i in outing:
             i.wheres_he[3] = 1
 
-    return real_worker, outing, accident, no_return_work  # 외출, 사고 없는 실 근무자, 외출자, 사고자
+    return real_worker, outing, accident, no_return_work, raw_outing  # 외출, 사고 없는 실 근무자, 외출자, 사고자
 
 
 # 긴밤자 결정
@@ -58,12 +57,12 @@ def whos_long_night(hes_2, temp_work, long_night_size):
 
 
 # 3타자 입력,계산
-def whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work, is_weekend, p2, no_return_work):
+def whos_3_2(real_worker, outing, today_group, temp_work, max_work, is_weekend, no_return_work, raw_outing):
     real_worker_size = len(real_worker)  # 현원(총원 - 외출자 - 사고자)
-    size_2 = real_worker_size * 3 - sum(max_work) + len(outing)  # 2타자 수
+    size_2 = real_worker_size * 3 - sum(max_work) + len(raw_outing)  # 2타자 수
     size_3 = real_worker_size - size_2  # 3타자 수
-    hes_3, hes_2, long_nighter = [], [], []  # 3타자, 2타자, 긴밤자
-    # temp_work[3] = copy.deepcopy(outing)
+    hes_3, hes_2, hes_1, long_nighter = [], [], [], []  # 3타자, 2타자, 긴밤자
+    size_1 = 0
 
     if is_weekend == 2:  # 주말에는 size_2가 2타자 + 복귀타 없는 외출자로 계산되서 빼줌
         size_2 -= len(no_return_work)
@@ -78,37 +77,72 @@ def whos_3_2(real_worker, outing, today_group, accident, temp_work, max_work, is
     else:  # a,c조에서는 이미 잘려서 괜찮다
         max_work[3] -= len(outing)
 
-    if size_2 > 0 and is_weekend == 1:  # 2타자 자동 계산
-        start_2 = 'Member12'  # input("2타 시작 입력 : ")
+    if size_3 >= 0:
+        if size_2 > 0 and is_weekend == 1:  # 2타자 자동 계산
+            start_2 = 'Member12'  # input("2타 시작 입력 : ")
+            for member in real_worker:
+                if member.name == start_2:
+                    index = real_worker.index(member)
+                    for i in range(size_2):
+                        hes_2.append(real_worker[(i + index) % real_worker_size])
+                    break
+        elif size_2 > 0 and is_weekend == 2:  # 주말 2타자 랜덤 추첨
+            temp = []
+            for i in range(size_2):
+                lucky_man = random.choice(real_worker)
+                temp.append(lucky_man)
+                real_worker.remove(lucky_man)
+                hes_2.append(lucky_man)
+            real_worker += temp
+
         for member in real_worker:
-            if member.name == start_2:
-                index = real_worker.index(member)
-                for i in range(size_2):
-                    hes_2.append(real_worker[(i + index) % real_worker_size])
-                break
-    elif size_2 > 0 and is_weekend == 2:  # 주말 2타자 랜덤 추첨
-        temp = []
-        for i in range(size_2):
-            lucky_man = random.choice(real_worker)
-            temp.append(lucky_man)
-            real_worker.remove(lucky_man)
-            hes_2.append(lucky_man)
-        real_worker += temp
+            if member not in hes_2:
+                hes_3.append(member)
 
-    for member in real_worker:
-        if member not in hes_2:
-            hes_3.append(member)
+        if today_group == 'B':
+            long_night_size = real_worker_size - max_work[2] - max_work[3]  # 긴밤자 수
+            if long_night_size > 0:
+                temp_work, long_nighter = whos_long_night(hes_2, temp_work, long_night_size)
+            for long_night in long_nighter:
+                hes_2.remove(long_night)
+        else:
+            long_nighter = []
+    else:  # 1타
+        size_2 = real_worker_size + size_3
+        size_1 = real_worker_size - size_2
 
-    if today_group == 'B':
-        long_night_size = real_worker_size - max_work[2] - max_work[3]  # 긴밤자 수
-        if long_night_size > 0:
-            temp_work, long_nighter = whos_long_night(hes_2, temp_work, long_night_size)
-        for long_night in long_nighter:
-            hes_2.remove(long_night)
-    else:
-        long_nighter = []
+        if is_weekend == 2:  # 주말 한타는 그냥 올 두타로 만들어버린다
+            max_work[3] += size_1
+            for __ in range(size_1):
+                a = random.choice(outing)
+                outing.remove(a)
+                no_return_work.append(a)
+            size_2 += size_1
+            size_1 = size_3 = 0
+            hes_2 = copy.deepcopy(real_worker)
 
-    return hes_3, hes_2, temp_work, max_work, outing, size_2, long_nighter
+        if size_1 > 0 and is_weekend == 1:  # 1타자 자동 계산
+            start_1 = 'Member12'  # input("1타 시작 입력 : ")
+            for member in real_worker:
+                if member.name == start_1:
+                    index = real_worker.index(member)
+                    for i in range(size_1):
+                        hes_1.append(real_worker[(i + index) % real_worker_size])
+                    break
+            for member in real_worker:
+                if member not in hes_1:
+                    hes_2.append(member)
+
+        if today_group == 'B':
+            long_night_size = real_worker_size - max_work[2] - max_work[3]  # 긴밤자 수
+            if long_night_size > 0:
+                temp_work, long_nighter = whos_long_night(hes_2, temp_work, long_night_size)
+            for long_night in long_nighter:
+                hes_2.remove(long_night)
+        else:
+            long_nighter = []
+
+    return hes_3, hes_2, hes_1, temp_work, max_work, outing, size_2, size_1, long_nighter
 
 
 # 현재 배치된 사람들이 최대 근무 인원을 얼마나 넘었는지?
@@ -216,67 +250,97 @@ def re_arrange_2(temp_work_t, check_t, today_group, start=0):
                     return temp_work
 
 
-def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2):
-    if today_group != 'B':
-        while True:
-            try:
+def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2=-1):
+    if size_2 != -1:
+        if today_group != 'B':
+            while True:
                 check = copy.deepcopy(check_tt)
                 temp_work = copy.deepcopy(temp_work_tt)
                 temp_work = re_arrange(max_work, temp_work, check, today_group)
-                if temp_work == -1:
-                    raise NotImplementedError
-                else:
+                if temp_work != -1:
                     break
-            except:
-                pass
 
-        # 일단 선호 근무대로 들어간 사람들이 최대 근무 타수를 넘었는지 체크하고 넘었다면 넘지 않도록 재배열
-        check = overtime(max_work, temp_work)  # re_arrange에서 재배열된 사람들이 현재 최대 타수를 넘는지 체크
-        target = re_people(check, size_2, today_group)  # 근무가 재배열 되었는데 2타자가 들어갈 수 없는 형태라면 ex) 0305 목표 근무 타수를 설정 ex)0404
+            # 일단 선호 근무대로 들어간 사람들이 최대 근무 타수를 넘었는지 체크하고 넘었다면 넘지 않도록 재배열
+            check = overtime(max_work, temp_work)  # re_arrange에서 재배열된 사람들이 현재 최대 타수를 넘는지 체크
+            target = re_people(check, size_2,
+                               today_group)  # 근무가 재배열 되었는데 2타자가 들어갈 수 없는 형태라면 ex) 0305 목표 근무 타수를 설정 ex)0404
 
-        for i in range(4):
-            check[i] = check[i] - target[i]  # check 에서 target을 빼서 어느 시간대가 나와서 어느 시간대로 나와야하는지 체크
-        temp_work = re_arrange_2(temp_work, check, today_group)
+            for i in range(4):
+                check[i] = check[i] - target[i]  # check 에서 target을 빼서 어느 시간대가 나와서 어느 시간대로 나와야하는지 체크
+            temp_work = re_arrange_2(temp_work, check, today_group)
 
-        check = overtime(max_work, temp_work)  # 현재 얼마나 넘었는지 체크 이는 3타자 배열이 끝나고 2타자 배열 최대 근무 타수에 이용된다.
+            check = overtime(max_work, temp_work)  # 현재 얼마나 넘었는지 체크 이는 3타자 배열이 끝나고 2타자 배열 최대 근무 타수에 이용된다.
 
-    else:
-        for i in range(2):
-            while True:
-                try:
+        else:
+            for i in range(2):
+                while True:
                     temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
                     max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
                     check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
 
                     temp_work_t = re_arrange(max_work_t, temp_work_t, check_t, today_group, 2 * i)
-                    if temp_work_t == -1:
-                        raise NotImplementedError
-                    else:
+                    if temp_work_t != -1:
                         break
-                except:
-                    pass
 
-            check_t = overtime(max_work_t, temp_work_t)
-            target_t = re_people(check_t, size_2, today_group)
-            # if max(check_t) != sum(check_t) - max(check_t):
-            # 만약 2타자가 들어갈 수 없는 형태로 3타자가 들어갔다면 check가 target이 되도록 3타자 수를 조정
-            for j in range(2):
-                check_t[j] = check_t[j] - target_t[j]  # check 에서 target을 빼서 어느 시간대가 나와서 어느 시간대로 나와야하는지 체크
+                check_t = overtime(max_work_t, temp_work_t)
+                target_t = re_people(check_t, size_2, today_group)
+                # if max(check_t) != sum(check_t) - max(check_t):
+                # 만약 2타자가 들어갈 수 없는 형태로 3타자가 들어갔다면 check가 target이 되도록 3타자 수를 조정
+                for j in range(2):
+                    check_t[j] = check_t[j] - target_t[j]  # check 에서 target을 빼서 어느 시간대가 나와서 어느 시간대로 나와야하는지 체크
 
-            temp_work_t = re_arrange_2(temp_work_t, check_t, today_group, 2 * i)
-            check_t = overtime(max_work_t, temp_work_t)  # 현재 얼마나 넘었는지 체크 이는 3타자 배열이 끝나고 2타자 배열 최대 근무 타수에 이용된다.
+                temp_work_t = re_arrange_2(temp_work_t, check_t, today_group, 2 * i)
+                check_t = overtime(max_work_t, temp_work_t)  # 현재 얼마나 넘었는지 체크 이는 3타자 배열이 끝나고 2타자 배열 최대 근무 타수에 이용된다.
 
-            check_tt[2 * i], check_tt[2 * i + 1] = check_t[0], check_t[1]
-            temp_work_tt[2 * i], temp_work_tt[2 * i + 1] = temp_work_t[0], temp_work_t[1]
-            check = overtime(max_work, temp_work_tt)
-        check = check_tt
-        temp_work = temp_work_tt
+                check_tt[2 * i], check_tt[2 * i + 1] = check_t[0], check_t[1]
+                temp_work_tt[2 * i], temp_work_tt[2 * i + 1] = temp_work_t[0], temp_work_t[1]
+                check = overtime(max_work, temp_work_tt)
+            check = check_tt
+            temp_work = temp_work_tt
+    else:
+        if today_group != 'B':
+            while True:
+                check = copy.deepcopy(check_tt)
+                temp_work = copy.deepcopy(temp_work_tt)
+                temp_work = re_arrange(max_work, temp_work, check, today_group)
+                if temp_work != -1:
+                    break
+
+            check = overtime(max_work, temp_work)  # 현재 얼마나 넘었는지 체크 이는 3타자 배열이 끝나고 2타자 배열 최대 근무 타수에 이용된다.
+
+        else:
+            for i in range(2):
+                while True:
+                    temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
+                    max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
+                    check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
+
+                    temp_work_t = re_arrange(max_work_t, temp_work_t, check_t, today_group, 2 * i)
+                    if temp_work_t != -1:
+                        break
+
+                check_t = overtime(max_work_t, temp_work_t)  # 현재 얼마나 넘었는지 체크 이는 3타자 배열이 끝나고 2타자 배열 최대 근무 타수에 이용된다.
+
+                check_tt[2 * i], check_tt[2 * i + 1] = check_t[0], check_t[1]
+                temp_work_tt[2 * i], temp_work_tt[2 * i + 1] = temp_work_t[0], temp_work_t[1]
+                check = overtime(max_work, temp_work_tt)
+            check = check_tt
+            temp_work = temp_work_tt
 
     return temp_work, check
 
 
+def lets_make_rank(args):  # 리스트 셔플하기
+    h_list = []
+    for h in args:
+        h_list.append(h)
+    random.shuffle(h_list)
+    return h_list
+
+
 # 출력 함수
-def print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_2, hes_3,
+def print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_1, hes_2,
+               hes_3,
                long_nighter=[]):
     print(today_group)
     print("총원 : ", len(p2))
@@ -285,6 +349,7 @@ def print_work(today_time, today_group, temp_work, p2, accident, outing, no_retu
           [x.name for x in outing])
     print("\n복귀타 없는 외출자 수 : %d" % (len(no_return_work)), "\n내용 : ", [x.name for x in no_return_work])
     print("\n현원 : %d" % len(real_worker))
+    print("1타자 수 : %d" % len(hes_1), [x.name for x in hes_1])
     print("2타자 수 : %d" % len(hes_2), [x.name for x in hes_2])
     print("3타자 수 : %d" % len(hes_3), [x.name for x in hes_3])
     if today_group == 'B':
@@ -299,49 +364,91 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
     today_group = work_group[which_group]  # 오늘 근무 조
     max_work = copy.deepcopy(Timetable[which_group][is_weekend])  # 오늘 근무 최대 타수
     real_max_work = copy.deepcopy(Timetable[which_group][is_weekend])
-    real_worker, outing, accident, no_return_work = whos_out(p2, today_group, max_work)  # 실 근무자, 사고자, 외출자 계산
+    real_worker, outing, accident, no_return_work, raw_outing = whos_out(p2, today_group,
+                                                                         max_work)  # 실 근무자, 사고자, 외출자 계산
     true_real_worker = real_worker
     temp_work = [[], [], [], []]  # 세타 근무 들어간 사람
     temp_work_2 = [[], [], [], []]  # 두타 근무 들어간 사람
-    hes_3, hes_2, temp_work, max_work, outing, size_2, long_nighter = whos_3_2(real_worker, outing, today_group,
-                                                                               accident, temp_work,
-                                                                               max_work, is_weekend, p2, no_return_work)
+    hes_3, hes_2, hes_1, temp_work, max_work, outing, size_2, size_1, long_nighter = whos_3_2(real_worker, outing,
+                                                                                              today_group, temp_work,
+                                                                                              max_work, is_weekend,
+                                                                                              no_return_work,
+                                                                                              raw_outing)
 
-    # 3타자, 2타자
-    for worker in hes_3:  # 3타자 우선
-        for i in range(3):
-            temp_work[today_time.index(worker.times3[today_group][i])].append(worker)  # temp_work에 3타자의 선호 근무대로 객체 입력
-            worker.wheres_he[today_time.index(worker.times3[today_group][i])] = 1  # 객체 내부 변수에 현재 객체의 들어간 근무 입력
+    if hes_1 == []:  # 3타자, 2타자
+        if len(hes_3) != 0:
+            for worker in hes_3:  # 3타자 우선
+                for i in range(3):
+                    temp_work[today_time.index(worker.times3[today_group][i])].append(
+                        worker)  # temp_work에 3타자의 선호 근무대로 객체 입력
+                    worker.wheres_he[today_time.index(worker.times3[today_group][i])] = 1  # 객체 내부 변수에 현재 객체의 들어간 근무 입력
 
-    check = overtime(max_work, temp_work)  # 들어간 사람들 중에서 최대 근무 타수 중에서 얼마나 초과, 미달했는지 리스트
-    temp_work, max_work_2 = re_assign(max_work, temp_work, check, today_group, size_2)
-    # 2타자로 넘기기 전에 2타자가 들어갈 수 있도록 3타자 위치 조정,max_work_2는 조정에 따른 2타자가 들어갈 수 있는 위치, 최대 타수
-
-    for worker in hes_2:
-        for i in range(2):
-            temp_work_2[today_time.index(worker.times2[today_group][i])].append(worker)
-            worker.wheres_he[today_time.index(worker.times2[today_group][i])] = 1
-
-    check_2 = overtime(max_work_2, temp_work_2)  # 3타자와 동일
-    temp_work_2, xxx = re_assign(max_work_2, temp_work_2, check_2, today_group,
-                                 size_2)  # 3타자와 동일, xxx는 딱히 필요없는 변수라 xxx라고 함
-
-    if today_group != 'B':
-        temp_work[3] += outing
-    else:
-        if real_max_work[3] - len(outing) < 0:  # B조에서 복귀타 수가 막타자(4시근무) 수 초과 시
-            out_last_worker = random.sample(outing, real_max_work[3])
-            temp_work[3] += out_last_worker
-            for tt in outing:
-                if tt not in out_last_worker:
-                    temp_work[2] += [tt]
+            check = overtime(max_work, temp_work)  # 들어간 사람들 중에서 최대 근무 타수 중에서 얼마나 초과, 미달했는지 리스트
+            temp_work, max_work_2 = re_assign(max_work, temp_work, check, today_group, size_2)
+        # 2타자로 넘기기 전에 2타자가 들어갈 수 있도록 3타자 위치 조정,max_work_2는 조정에 따른 2타자가 들어갈 수 있는 위치, 최대 타수
         else:
+            max_work_2 = copy.deepcopy(max_work)
+            temp_work_2 = copy.deepcopy(temp_work)
+        for worker in hes_2:
+            for i in range(2):
+                temp_work_2[today_time.index(worker.times2[today_group][i])].append(worker)
+                worker.wheres_he[today_time.index(worker.times2[today_group][i])] = 1
+
+        check_2 = overtime(max_work_2, temp_work_2)  # 3타자와 동일
+        temp_work_2, xxx = re_assign(max_work_2, temp_work_2, check_2, today_group,
+                                     size_2)  # 3타자와 동일, xxx는 딱히 필요없는 변수라 xxx라고 함
+
+        if today_group != 'B':
             temp_work[3] += outing
+        else:
+            if real_max_work[2] - max_work[2] > 0:
+                out_last_worker = random.sample(outing, real_max_work[2] - max_work[2])
+                temp_work[2] += out_last_worker
+                for tt in outing:
+                    if tt not in out_last_worker:
+                        temp_work[3] += [tt]
+            else:
+                temp_work[3] += outing
 
-    for i in range(4):
-        temp_work[i] += temp_work_2[i]
+        for i in range(4):
+            temp_work[i] += temp_work_2[i]
+    else:
+        for worker in hes_2:  # 2타자 우선
+            for i in range(2):
+                temp_work[today_time.index(worker.times2[today_group][i])].append(
+                    worker)  # temp_work에 3타자의 선호 근무대로 객체 입력
+                worker.wheres_he[today_time.index(worker.times2[today_group][i])] = 1  # 객체 내부 변수에 현재 객체의 들어간 근무 입력
 
-    print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_2, hes_3,
+        check = overtime(max_work, temp_work)  # 들어간 사람들 중에서 최대 근무 타수 중에서 얼마나 초과, 미달했는지 리스트
+        temp_work, max_work_2 = re_assign(max_work, temp_work, check, today_group)
+        # max_work_2는 조정에 따른 1타자가 들어갈 수 있는 위치, 최대 타수
+
+        hes_1 = lets_make_rank(hes_1)
+
+        for member in hes_1:
+            for i in range(len(max_work_2)):
+                if max_work_2[i] > 0:
+                    temp_work[i].append(member)
+                    max_work_2[i] -= 1
+                    member.wheres_he[i] = 1
+
+        if today_group != 'B':
+            temp_work[3] += outing
+        else:
+            if real_max_work[3] - len(outing) < 0:  # B조에서 복귀타 수가 막타자(4시근무) 수 초과 시
+                out_last_worker = random.sample(outing, real_max_work[3])
+                temp_work[3] += out_last_worker
+                for tt in outing:
+                    if tt not in out_last_worker:
+                        temp_work[2] += [tt]
+            else:
+                temp_work[3] += outing
+
+        for i in range(4):
+            temp_work[i] += temp_work_2[i]
+
+    print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_1, hes_2,
+               hes_3,
                long_nighter)
 
     return temp_work, true_real_worker, outing
