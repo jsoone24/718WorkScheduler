@@ -7,7 +7,8 @@ placetable = copy.deepcopy(constants.placetable)
 work_group = copy.deepcopy(constants.work_group)
 which_group = copy.deepcopy(constants.which_group)
 is_weekend = copy.deepcopy(constants.is_weekend)
-'''
+
+
 def lets_make_rank(args):  # 리스트 셔플하기
     h_list = []
     for h in args:
@@ -163,7 +164,7 @@ def schedule_place(workers, outing):
             while True:
                 workers_t = copy.deepcopy(temp_workers)
                 temp_jung_t = copy.deepcopy(temp_jung)
-                max_place_t = copy.deepcopy(max_place_t)
+                max_place_t = copy.deepcopy(max_place)
                 result=jung_rearrange(workers_t, temp_jung_t, max_place_t)
                 if result == 0:
                   break
@@ -243,7 +244,7 @@ def whatis_hwork(mat):
             print(Timetable[which_group][0][2], "-서남문", end=' ')
         if 1 == mat[3][3]:
             print(Timetable[which_group][0][3], "-서남문", end=' ')
-    print()'''
+    print()
 
 
 def lets_make_rank(args):  # 리스트 셔플하기

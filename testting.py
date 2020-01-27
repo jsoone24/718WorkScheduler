@@ -4,7 +4,7 @@ import copy
 import datetime
 
 start_2020_01_01_B = datetime.datetime(2020, 1, 1)  # 1월 1일 근무조
-today = datetime.datetime(2020, 1, 14)  # 오늘 날짜
+today = datetime.datetime(2020, 1, 17)  # 오늘 날짜
 which_group = ((today - start_2020_01_01_B).days + 1) % 3  # 나머지 0이면 A, 1이면 B, 2이면 C
 work_group = {0: 'A', 1: 'B', 2: 'C'}  # workgroup 에 which_group을 대입하면 오늘 무슨 조인지 문자로 파악 가능
 is_weekend = int(today.weekday() / 5) + 1  # 오늘 주말인지 아닌지 1이면 평일, 2이면 주말
@@ -84,7 +84,7 @@ p2 = [a1, a2, a3, a4, a5, a6, a7, a8,
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2):
     acci = ['Member01','Member08','Member02']#input("사고자 입력 : ").split()
-    out = ['Member11','Member07'] #("외출자 입력 : ").split()
+    out = ['Member11', 'Member07', 'Member06']  # ("외출자 입력 : ").split()
     real_worker, accident, outing = [], [], []
     for member in p2:
         if member.name in acci:
@@ -463,7 +463,6 @@ def jung_rearrange(workers, temp_jung ,max_place, start=0):
         check.append(max_place[i][0])
 
     print(check)
-
 
 
 def schedule_place(workers,outing):
