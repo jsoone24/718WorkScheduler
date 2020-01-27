@@ -246,7 +246,7 @@ def whatis_hwork(mat):
             print(Timetable[which_group][0][3], "-서남문", end=' ')
     print()
 
-
+'''
 def lets_make_rank(args):  # 리스트 셔플하기
     h_list = []
     for h in args:
@@ -290,7 +290,7 @@ def jung_2times(workers, poor_man, max_place):
     workers.remove(poor_man)
 
 
-def jung_rearrange(workers, temp_jung ,max_place, start=0):
+def jung_rearrange(workers, temp_jung ,max_place):
     for h in workers:  # 랜덤 시간대를 골라 정출 한개 픽스
 
         a = random_index_except_zero(h.wheres_he)
@@ -463,4 +463,4 @@ def whatis_hwork(mat):
             print(Timetable[which_group][0][2], "-서남문",end=' ')
         if 1 == mat[3][3]:
             print(Timetable[which_group][0][3], "-서남문",end=' ')
-    print()
+    print()'''
