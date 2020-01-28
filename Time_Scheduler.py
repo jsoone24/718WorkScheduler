@@ -209,7 +209,20 @@ def re_arrange(max_work, temp_work_t, check_t, today_group, start=0):
                         count = 0
                         break
                     count += 1
-                    if count > 500:
+                    if int(count / 50) >= 1:
+                        which_one = random.choice(x)
+                        tt = random.choice(temp_work[which_one])
+                        if tt.wheres_he[y[0]] == 0:
+                            tt.wheres_he[which_one] = 0
+                            tt.wheres_he[y[0]] = 1
+                            temp_work[which_one].remove(tt)
+                            temp_work[y[0]].append(tt)
+                            poor_man.wheres_he[y[0]] = 0
+                            poor_man.wheres_he[which_one] = 1
+                            temp_work[which_one].append(poor_man)
+                            temp_work[y[0]].remove(poor_man)
+
+                    if count > 200:
                         return -1
 
     return temp_work

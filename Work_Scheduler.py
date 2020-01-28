@@ -151,7 +151,7 @@ def schedule_place(workers, outing):
             while True:
                 workers_t = copy.deepcopy(workers)
                 temp_jung_t = copy.deepcopy(temp_jung)
-                max_place_t = copy.deepcopy(max_place_t)
+                max_place_t = copy.deepcopy(max_place)
                 result=jung_rearrange(workers_t, temp_jung_t, max_place_t)
                 if result == 0:
                   break
