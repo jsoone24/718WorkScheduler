@@ -5,7 +5,7 @@ import copy
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2, today_group, max_work):
     acci = ['Member01', 'Member08','Member02']  # input("사고자 입력 : ").split()
-    out = ['Member17', 'Member10','Member06']  # ("외출자 입력 : ").split()'Member14', 'Member21', 'Member20', 'Member11', 'Member06'
+    out = ['Member17', 'Member10', 'Member06', 'Member14', 'Member21', 'Member20', 'Member11', 'Member06']  # ("외출자 입력 : ").split()
     real_worker, accident, outing, no_return_work, raw_outing = [], [], [], [], []
 
     for member in p2:
@@ -209,7 +209,20 @@ def re_arrange(max_work, temp_work_t, check_t, today_group, start=0):
                         count = 0
                         break
                     count += 1
-                    if count > 500:
+                    if int(count / 50) >= 1:
+                        which_one = random.choice(x)
+                        tt = random.choice(temp_work[which_one])
+                        if tt.wheres_he[y[0]] == 0:
+                            tt.wheres_he[which_one] = 0
+                            tt.wheres_he[y[0]] = 1
+                            temp_work[which_one].remove(tt)
+                            temp_work[y[0]].append(tt)
+                            poor_man.wheres_he[y[0]] = 0
+                            poor_man.wheres_he[which_one] = 1
+                            temp_work[which_one].append(poor_man)
+                            temp_work[y[0]].remove(poor_man)
+
+                    if count > 200:
                         return -1
 
     return temp_work
