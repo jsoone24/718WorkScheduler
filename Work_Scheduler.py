@@ -16,7 +16,6 @@ def lets_make_rank(args):  # 리스트 셔플하기
     random.shuffle(h_list)
     return h_list
 
-
 def random_index_except_zero(list):
     a = random.randint(0, len(list) - 1)
     while True:
@@ -25,6 +24,7 @@ def random_index_except_zero(list):
         else:
             a = random.randint(0, len(list) - 1)
     return a
+
 
 
 def make_column_list(mat, n):
@@ -89,7 +89,7 @@ def jung_rearrange(workers, temp_jung, max_place):
                         break
                     
                     count+=1
-                    if count>30:
+                    if count > 10:
                       return -1
                         
                         
@@ -121,10 +121,12 @@ def schedule_place(workers, outing):
         
         if len(outing) <= 2:
             workers = workers + outing
+            real_outing = copy.deepcopy(outing)
             outing = []
 
         else:
             workers = workers + outing[0:2]
+            real_outing = copy.deepcopy(outing[0:2])
             outing = outing[2:]
 
         if int(sum([max_place[i][0] for i in range(4)])) >= len(workers):  # 현 근무자수보다 정출 타수가 많거나 같을 경우
@@ -151,7 +153,7 @@ def schedule_place(workers, outing):
             while True:
                 workers_t = copy.deepcopy(workers)
                 temp_jung_t = copy.deepcopy(temp_jung)
-                max_place_t = copy.deepcopy(max_place_t)
+                max_place_t = copy.deepcopy(max_place)
                 result=jung_rearrange(workers_t, temp_jung_t, max_place_t)
                 if result == 0:
                   break
@@ -159,21 +161,18 @@ def schedule_place(workers, outing):
 
         elif int(sum([max_place[i][0] for i in range(4)])) < len(workers):  # 현 근무자가 타수보다 많을 경우
             no_jung = abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers))
-            temp_workers = workers[0:len(workers) - no_jung]
+            temp_workers = workers[no_jung:]
 
-            while True:
-                workers_t = copy.deepcopy(temp_workers)
-                temp_jung_t = copy.deepcopy(temp_jung)
-                max_place_t = copy.deepcopy(max_place)
-                result=jung_rearrange(workers_t, temp_jung_t, max_place_t)
-                if result == 0:
-                  break
-            
+            result = jung_rearrange(temp_workers, temp_jung, max_place)
+
 
         # 정출 제외한 근무지 무한 루프
         workers = workers + outing
         real_workers = copy.deepcopy(workers)
         r_max_place = copy.deepcopy(max_place)
+        for h in real_workers:
+            print(h.wheres_he)
+
         while True:
             for h in real_workers:
                 n = 0
