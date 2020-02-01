@@ -291,9 +291,13 @@ def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2=-1):
         else:
             for i in range(2):
                 while True:
-                    temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
+                    #temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
+                    #max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
+                    #check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
+
+                    temp_work_t = [temp_work_tt[2 * i], temp_work_tt[2 * i + 1]]
                     max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
-                    check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
+                    check_t = [check_tt[2 * i], check_tt[2 * i + 1]]
 
                     temp_work_t = re_arrange(max_work_t, temp_work_t, check_t, today_group, 2 * i)
                     if temp_work_t != -1:
@@ -317,8 +321,11 @@ def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2=-1):
     else:
         if today_group != 'B':
             while True:
-                check = copy.deepcopy(check_tt)
-                temp_work = copy.deepcopy(temp_work_tt)
+              #  check = copy.deepcopy(check_tt)
+              #  temp_work = copy.deepcopy(temp_work_tt)
+              #  temp_work = re_arrange(max_work, temp_work, check, today_group)
+                check = check_tt
+                temp_work = temp_work_tt
                 temp_work = re_arrange(max_work, temp_work, check, today_group)
                 if temp_work != -1:
                     break
@@ -328,9 +335,13 @@ def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2=-1):
         else:
             for i in range(2):
                 while True:
-                    temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
+                  #  temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
+                  #  max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
+                    #check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
+
+                    temp_work_t = [temp_work_tt[2 * i], temp_work_tt[2 * i + 1]]
                     max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
-                    check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
+                    check_t = [check_tt[2 * i], check_tt[2 * i + 1]]
 
                     temp_work_t = re_arrange(max_work_t, temp_work_t, check_t, today_group, 2 * i)
                     if temp_work_t != -1:
