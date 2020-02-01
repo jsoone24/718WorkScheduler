@@ -150,13 +150,9 @@ def schedule_place(workers, outing):
                           if sum(workers[i].wheres_he) == 3:  # 3타자 중에서 정출을 두번 줌
                               jung_2times(workers, workers[i], max_place)
                               break
-            while True:
-                workers_t = copy.deepcopy(workers)
-                temp_jung_t = copy.deepcopy(temp_jung)
-                max_place_t = copy.deepcopy(max_place)
-                result=jung_rearrange(workers_t, temp_jung_t, max_place_t)
-                if result == 0:
-                  break
+
+            result = jung_rearrange(workers, temp_jung, max_place)
+
             
 
         elif int(sum([max_place[i][0] for i in range(4)])) < len(workers):  # 현 근무자가 타수보다 많을 경우
