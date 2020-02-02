@@ -3,8 +3,8 @@ import copy
 
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2, today_group, max_work):
-    acci = ['Member01', 'Member08', 'Member02', 'Member21']  # input("사고자 입력 : ").split()
-    out = ['Member17', 'Member10', 'Member06', 'Member14']  # ("외출자 입력 : ").split()
+    acci = []  # input("사고자 입력 : ").split()
+    out = ['Member17', 'Member10', 'Member06']  # ("외출자 입력 : ").split()
     real_worker, accident, outing, no_return_work, raw_outing = [], [], [], [], []
 
     for member in p2:
@@ -432,6 +432,17 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
         if today_group != 'B':
             temp_work[3] += outing
         else:
+            if real_max_work[3] - len(outing) < 0:  # B조에서 복귀타 수가 막타자(4시근무) 수 초과 시
+                out_last_worker = random.sample(outing, real_max_work[3])
+                temp_work[3] += out_last_worker
+                for tt in outing:
+                    if tt not in out_last_worker:
+                        tt.wheres_he[3] = 0
+                        tt.wheres_he[2] = 1
+                        temp_work[2] += [tt]
+            else:
+                temp_work[3] += outing
+        '''else:
             if real_max_work[2] - max_work[2] > 0:
                 out_last_worker = random.sample(outing, real_max_work[2] - max_work[2])
                 temp_work[2] += out_last_worker
@@ -439,7 +450,7 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
                     if tt not in out_last_worker:
                         temp_work[3] += [tt]
             else:
-                temp_work[3] += outing
+                temp_work[3] += outing'''
 
         for i in range(4):
             temp_work[i] += temp_work_2[i]
@@ -462,6 +473,7 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
                     temp_work[i].append(member)
                     max_work_2[i] -= 1
                     member.wheres_he[i] = 1
+                    break
 
         if today_group != 'B':
             temp_work[3] += outing
@@ -471,6 +483,8 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
                 temp_work[3] += out_last_worker
                 for tt in outing:
                     if tt not in out_last_worker:
+                        tt.wheres_he[3] = 0
+                        tt.wheres_he[2] = 1
                         temp_work[2] += [tt]
             else:
                 temp_work[3] += outing
