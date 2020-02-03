@@ -113,78 +113,83 @@ def schedule_place(workers, outing):
     while True:
         count = 0
         workers = lets_make_rank(workers)
-        outing = lets_make_rank(outing)
+
         len_outing = len(outing[:])
         max_place = placetable[which_group][is_weekend - 1]
         deter = 0
         escape = True
         temp_jung = [[], [], [], []]  # 정출에 들어가는 사람 리스트
         '''if work_group[which_group] == 'B':  # 외출자 수 계산 후 정출 들어갈 외출자 pick
-            if len(outing) <= 4:
+            if len(outing) <= 6:
+                if len(outing)<=2:
+                    workers = workers + outing
+                    outing = []
+                else:
+                    workers = workers + outing[:2]
+                    outing=outing[2:]
+
+            else:
+                outing_4=[]
+                outing_2=[]
+                for h in outing:
+                    if h.wheres_he[3]==1:
+                        outing_4.append(h)
+                    else:
+                        outing_2.append(h)
+                outing=[]
+                if len_outing==7:
+                    workers= workers + outing_4[0:2] + outing_2
+                    outing= outing_4[2:]
+                elif len_outing>7:
+                    workers = workers + outing_4[0:2]+outing_2[:2]
+                    outing = outing_4[2:]+outing_2[2:]'''
+        while True:
+            outing = lets_make_rank(outing)
+            if len(outing) <= 2:
+
                 workers = workers + outing
+
                 outing = []
 
             else:
-                workers = workers + outing[0:4]
-                outing = outing[4:]'''
-        
-        if len(outing) <= 2:
-            workers = workers + outing
+                workers = workers + outing[0:2]
+                outing = outing[2:]
 
-            outing = []
-
-        else:
-            workers = workers + outing[0:2]
-
-            outing = outing[2:]
-
-        if int(sum([max_place[i][0] for i in range(4)])) >= len(workers):  # 현 근무자수보다 정출 타수가 많거나 같을 경우
-            poors = abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers))
-            if work_group[which_group] == 'B': 
-              for __ in range(poors):
-                    for i in range(len(workers)):
-                        if sum(workers[i].wheres_he) == 3:  # 3타자 중에서 정출을 두번 줌
-                            jung_2times(workers, workers[i], max_place)
-                            break
-            else:  
-              if len_outing >= 2:
-                  for __ in range(poors):
-                      for i in range(len(workers)):
-                          if sum(workers[i].wheres_he) == 3 and workers[i].wheres_he[3] == 0:  # 3타자 중에서 정출을 두번 줌
-                              jung_2times(workers, workers[i], max_place)
-                              break
-              else:
-                  for __ in range(poors):
-                      for i in range(len(workers)):
-                          if sum(workers[i].wheres_he) == 3:  # 3타자 중에서 정출을 두번 줌
-                              jung_2times(workers, workers[i], max_place)
-                              break
-            while True:
-                r_workers = copy.deepcopy(workers)
-                r_temp_jung = copy.deepcopy(temp_jung)
-                r_max_place = copy.deepcopy(max_place)
-                result = jung_rearrange(r_workers, r_temp_jung, r_max_place)
-                if result == 0:
-                    workers = r_workers
-                    temp_jung = r_temp_jung
-                    max_place = r_max_place
-                    break
+            if int(sum([max_place[i][0] for i in range(4)])) >= len(workers):  # 현 근무자수보다 정출 타수가 많거나 같을 경우
+                poors = abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers))
+                if work_group[which_group] == 'B':
+                    for __ in range(poors):
+                        for i in range(len(workers)):
+                            if sum(workers[i].wheres_he) == 3:  # 3타자 중에서 정출을 두번 줌
+                                jung_2times(workers, workers[i], max_place)
+                                break
+                else:
+                    if len_outing >= 2:
+                        for __ in range(poors):
+                            for i in range(len(workers)):
+                                if sum(workers[i].wheres_he) == 3 and workers[i].wheres_he[3] == 0:  # 3타자 중에서 정출을 두번 줌
+                                    jung_2times(workers, workers[i], max_place)
+                                    break
+                    else:
+                        for __ in range(poors):
+                            for i in range(len(workers)):
+                                if sum(workers[i].wheres_he) == 3:  # 3타자 중에서 정출을 두번 줌
+                                    jung_2times(workers, workers[i], max_place)
+                                    break
+                result = jung_rearrange(workers, temp_jung, max_place)
+                break
 
 
-
-        elif int(sum([max_place[i][0] for i in range(4)])) < len(workers):  # 현 근무자가 타수보다 많을 경우
-            no_jung = abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers))
-            temp_workers = workers[no_jung:]
-            # result = jung_rearrange(temp_workers, temp_jung, max_place)
-
-            while True:
+            elif int(sum([max_place[i][0] for i in range(4)])) < len(workers):  # 현 근무자가 타수보다 많을 경우
+                no_jung = abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers))
+                temp_workers = workers[no_jung:]  # 외출자들은 무조건 정출에 포함되게끔 만든 트릭
+                # result = jung_rearrange(temp_workers, temp_jung, max_place)
                 r_workers = copy.deepcopy(temp_workers)
                 r_temp_jung = copy.deepcopy(temp_jung)
                 real_max_place = copy.deepcopy(max_place)
                 result = jung_rearrange(r_workers, r_temp_jung, real_max_place)
                 if result == 0:
-                    temp_workers = r_workers
-                    temp_jung = r_temp_jung
+                    workers[no_jung:] = r_workers
                     max_place = real_max_place
                     break
 
