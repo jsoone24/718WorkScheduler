@@ -3,8 +3,8 @@ import copy
 
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2, today_group, max_work):
-    acci = []  # input("사고자 입력 : ").split()
-    out = ['Member17', 'Member10', 'Member06']  # ("외출자 입력 : ").split()
+    acci = ['Member01', 'Member06', 'Member11', 'Member21', 'Member07', 'Member17', 'Member16', 'Member18']  # input("사고자 입력 : ").split()
+    out = []  # ("외출자 입력 : ").split()
     real_worker, accident, outing, no_return_work, raw_outing = [], [], [], [], []
 
     for member in p2:
