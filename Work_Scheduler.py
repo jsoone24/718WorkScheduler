@@ -16,6 +16,7 @@ def lets_make_rank(args):  # 리스트 셔플하기
     random.shuffle(h_list)
     return h_list
 
+
 def random_index_except_zero(list):
     a = random.randint(0, len(list) - 1)
     while True:
@@ -24,7 +25,6 @@ def random_index_except_zero(list):
         else:
             a = random.randint(0, len(list) - 1)
     return a
-
 
 
 def make_column_list(mat, n):
@@ -242,7 +242,6 @@ def schedule_place(f_workers, f_outing):
         print("근무 짜기가 실패하였습니다. 다시 돌려주세요 ㅎㅎ")
         return -1
 
-
     return real_workers
 
 
@@ -284,6 +283,17 @@ def whatis_hwork(mat):
         if 1 == mat[3][3]:
             print(Timetable[which_group][0][3], "-서남문", end=' ')
     print()
+
+
+def whatis_hwork_2(mat):
+    strr = ['정출', '별정', '별후', '서남문']
+    for i in range(4):
+        if 1 in mat[i]:
+            print("%d%4s" % (Timetable[which_group][0][i], (strr[mat[i].index(1)])), end='\t')
+        else:
+            print("%6s" % (""), end='\t')
+    print()
+
 
 '''
 def lets_make_rank(args):  # 리스트 셔플하기

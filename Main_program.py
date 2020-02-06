@@ -25,14 +25,20 @@ def printing(tt):
 
 if __name__ == '__main__':
     scheduled_work, real_worker, outing = Time_Scheduler.scheduler(Timetable, which_group, work_group, is_weekend, p2)
-    while True:
-        real_worker_t = copy.deepcopy(real_worker)
-        outing_t = copy.deepcopy(outing)
-        result = Work_Scheduler.schedule_place(real_worker_t, outing_t)
-        if result != -1:
-            break
 
-    if result != -1:
-        for h in result:
-            print(h.name, end=' ')
-            Work_Scheduler.whatis_hwork(h.work)
+    if scheduled_work != -1:
+        while True:
+            real_worker_t = copy.deepcopy(real_worker)
+            outing_t = copy.deepcopy(outing)
+            result = Work_Scheduler.schedule_place(real_worker_t, outing_t)
+            if result != -1:
+                break
+
+        if result != -1:
+            for h in result:
+                print(h.name, end=' ')
+                mat_T = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+                for i in range(4):
+                    for j in range(4):
+                        mat_T[j][i] = h.work[i][j]
+                Work_Scheduler.whatis_hwork_2(mat_T)

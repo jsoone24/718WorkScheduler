@@ -3,7 +3,7 @@ import copy
 
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2, today_group, max_work):
-    acci = ['Member01', 'Member06', 'Member11', 'Member21', 'Member07', 'Member17', 'Member16', 'Member18']  # input("사고자 입력 : ").split()
+    acci = ['Member01', 'Member06', 'Member11', 'Member21', 'Member07', 'Member17' ''', 'Member16','Member02','Member04' ''']  # input("사고자 입력 : ").split()
     out = []  # ("외출자 입력 : ").split()
     real_worker, accident, outing, no_return_work, raw_outing = [], [], [], [], []
 
@@ -365,20 +365,6 @@ def lets_make_rank(args):  # 리스트 셔플하기
     return h_list
 
 
-# 비상 출력
-def printing(tt):
-    for i in range(4):
-        print("\t", [x.name for x in tt[i]])
-    print('temp_work들어간 사람')
-    c = []
-    for a in tt:
-        for b in a:
-            if b not in c:
-                c.append(b)
-                print(b.name, b.wheres_he)
-    print(len(c))
-
-
 # 출력 함수
 def print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_1, hes_2, hes_3, long_nighter=[]):
     print(today_group)
@@ -491,6 +477,12 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
 
         for i in range(4):
             temp_work[i] += temp_work_2[i]
+
+    for i in range(4):
+        if len(temp_work[i]) < real_max_work[i]:
+            print("Member21은 프로그램에 하등 도움이 안됨")
+            return -1, -1, -1
+
     print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_1, hes_2, hes_3, long_nighter)
 
     return temp_work, real_worker, outing
