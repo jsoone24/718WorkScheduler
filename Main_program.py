@@ -37,8 +37,4 @@ if __name__ == '__main__':
         if result != -1:
             for h in result:
                 print(h.name, end=' ')
-                mat_T = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-                for i in range(4):
-                    for j in range(4):
-                        mat_T[j][i] = h.work[i][j]
-                Work_Scheduler.whatis_hwork_2(mat_T)
+                Work_Scheduler.whatis_hwork(h.work)

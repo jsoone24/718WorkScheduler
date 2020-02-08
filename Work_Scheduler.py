@@ -1,6 +1,7 @@
 import constants
 import random
 import copy
+import pprint
 
 Timetable = copy.deepcopy(constants.Timetable)
 placetable = copy.deepcopy(constants.placetable)
@@ -246,52 +247,14 @@ def schedule_place(f_workers, f_outing):
 
 
 def whatis_hwork(mat):
-    if 1 in mat[0]:
-        if 1 == mat[0][0]:
-            print(Timetable[which_group][0][0], "-정출", end=' ')
-        if 1 == mat[0][1]:
-            print(Timetable[which_group][0][1], "-정출", end=' ')
-        if 1 == mat[0][2]:
-            print(Timetable[which_group][0][2], "-정출", end=' ')
-        if 1 == mat[0][3]:
-            print(Timetable[which_group][0][3], "-정출", end=' ')
-    if 1 in mat[1]:
-        if 1 == mat[1][0]:
-            print(Timetable[which_group][0][0], "-별정", end=' ')
-        if 1 == mat[1][1]:
-            print(Timetable[which_group][0][1], "-별정", end=' ')
-        if 1 == mat[1][2]:
-            print(Timetable[which_group][0][2], "-별정", end=' ')
-        if 1 == mat[1][3]:
-            print(Timetable[which_group][0][3], "-별정", end=' ')
-    if 1 in mat[2]:
-        if 1 == mat[2][0]:
-            print(Timetable[which_group][0][0], "-별후", end=' ')
-        if 1 == mat[2][1]:
-            print(Timetable[which_group][0][1], "-별후", end=' ')
-        if 1 == mat[2][2]:
-            print(Timetable[which_group][0][2], "-별후", end=' ')
-        if 1 == mat[2][3]:
-            print(Timetable[which_group][0][3], "-별후", end=' ')
-    if 1 in mat[3]:
-        if 1 == mat[3][0]:
-            print(Timetable[which_group][0][0], "-서남문", end=' ')
-        if 1 == mat[3][1]:
-            print(Timetable[which_group][0][1], "-서남문", end=' ')
-        if 1 == mat[3][2]:
-            print(Timetable[which_group][0][2], "-서남문", end=' ')
-        if 1 == mat[3][3]:
-            print(Timetable[which_group][0][3], "-서남문", end=' ')
-    print()
-
-
-def whatis_hwork_2(mat):
+    t = [''] * 4
     strr = ['정출', '별정', '별후', '서남문']
     for i in range(4):
-        if 1 in mat[i]:
-            print("%d%4s" % (Timetable[which_group][0][i], (strr[mat[i].index(1)])), end='\t')
-        else:
-            print("%6s" % (""), end='\t')
+        for j in range(4):
+            if mat[j][i] == 1:
+                t[i] = strr[j]
+                print("%d%4s" % (Timetable[which_group][0][i], strr[j]), end=' ')
+                break
     print()
 
 
