@@ -7,34 +7,34 @@ which_group = ((today - start_2020_01_01_B).days + 1) % 3  # 나머지 0이면 A
 work_group = {0: 'A', 1: 'B', 2: 'C'}  # workgroup 에 which_group을 대입하면 오늘 무슨 조인지 문자로 파악 가능
 is_weekend = int(today.weekday() / 5) + 1  # 오늘 주말인지 아닌지 1이면 평일, 2이면 주말
 
-# 근무 시간, 타수
-TimeA = [6, 4, 8, 12]
-WorkA = [7, 11, 8, 6]
-WorkA_weekend = [6, 8, 7, 6]
-
-TimeB = [8, 12, 2, 4]
-WorkB = [11, 11, 6, 6]
-WorkB_weekend = [8, 8, 6, 6]
-
-TimeC = [10, 2, 6, 22]
-WorkC = [11, 11, 11, 6]
-WorkC_weekend = [8, 8, 7, 6]
-
-Timetable = [[TimeA, WorkA, WorkA_weekend],
-             [TimeB, WorkB, WorkB_weekend],
-             [TimeC, WorkC, WorkC_weekend]]  # 배열로 묶어서 저장
-
 placeA = [[2, 2, 2, 1], [5, 3, 2, 1], [3, 2, 2, 1], [2, 2, 1, 1]]  # 정출, 별정, 별후, 서남문 순서
 placeB = [[5, 3, 2, 1], [5, 3, 2, 1], [2, 2, 1, 1], [2, 2, 1, 1]]
 placeC = [[5, 3, 2, 1], [5, 3, 2, 1], [5, 3, 2, 1], [2, 2, 1, 1]]
 
 placeA_weekend = [[2, 2, 1, 1], [3, 2, 2, 1], [2, 2, 2, 1], [2, 2, 1, 1]]
-placeB_weekend = [[3, 2, 2, 1], [3, 3, 2, 1], [2, 2, 2, 1], [2, 2, 1, 1]]
+placeB_weekend = [[3, 2, 2, 1], [3, 2, 2, 1], [2, 2, 1, 1], [2, 2, 1, 1]]
 placeC_weekend = [[3, 2, 2, 1], [3, 2, 2, 1], [2, 2, 2, 1], [2, 2, 1, 1]]
 
 placetable = [[placeA, placeA_weekend],
               [placeB, placeB_weekend],
               [placeC, placeC_weekend]]
+
+# 근무 시간, 타수
+TimeA = [6, 4, 8, 12]
+WorkA = [sum(x) for x in placeA]
+WorkA_weekend = [sum(x) for x in placeA_weekend]
+
+TimeB = [8, 12, 2, 4]
+WorkB = [sum(x) for x in placeB]
+WorkB_weekend = [sum(x) for x in placeB_weekend]
+
+TimeC = [10, 2, 6, 22]
+WorkC = [sum(x) for x in placeC]
+WorkC_weekend = [sum(x) for x in placeC_weekend]
+
+Timetable = [[TimeA, WorkA, WorkA_weekend],
+             [TimeB, WorkB, WorkB_weekend],
+             [TimeC, WorkC, WorkC_weekend]]  # 배열로 묶어서 저장
 
 
 # 선호 근무 조사
@@ -45,6 +45,7 @@ class fav:
         self.times2 = {'A': t2[0], 'B': t2[1], 'C': t2[2]}
         self.wheres_he = [0, 0, 0, 0]
         self.work = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+        self.flag = 0
 
 
 # 2분대 사람들 공백 차례로 1, 2, 3, 4분대
@@ -74,6 +75,7 @@ a20 = fav('Member20', [[6, 4, 8], [8, 12, 2], [10, 2, 22]], [[6, 8], [12, 2], [1
 a21 = fav('Member21', [[6, 4, 8], [8, 12, 2], [10, 2, 22]], [[6, 8], [8, 2], [6, 22]])
 
 bundae = [5, 5, 6, 5]
-p2 = [a1, a2, a3, a4, a5, a6, a7, a8,
-      a9, a10, a11, a12, a13, a14, a15,
-      a16, a17, a18, a19, a20, a21]
+p2 = [a1, a2, a3, a4, a5,
+      a6, a7, a8, a9, a10, a11,
+      a12, a13, a14, a15, a16,
+      a17, a18, a19, a20, a21]

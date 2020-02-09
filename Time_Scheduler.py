@@ -1,9 +1,10 @@
 import random
 import copy
 
+
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2, today_group, max_work):
-    acci = ['Member01', 'Member06', 'Member11', 'Member21', 'Member07', 'Member17' ''', 'Member16','Member02','Member04' ''']  # input("사고자 입력 : ").split()
+    acci = ['Member01', 'Member06', 'Member11', 'Member21', 'Member07', 'Member17', 'Member16']  # input("사고자 입력 : ").split()
     out = []  # ("외출자 입력 : ").split()
     real_worker, accident, outing, no_return_work, raw_outing = [], [], [], [], []
 
@@ -111,14 +112,18 @@ def whos_3_2(real_worker, outing, today_group, temp_work, max_work, is_weekend, 
         size_1 = real_worker_size - size_2
 
         if is_weekend == 2:  # 주말 한타는 그냥 올 두타로 만들어버린다
-            max_work[3] += size_1
-            for __ in range(size_1):
-                a = random.choice(outing)
-                outing.remove(a)
-                no_return_work.append(a)
-            size_2 += size_1
-            size_1 = size_3 = 0
-            hes_2 = copy.deepcopy(real_worker)
+            if size_1 > len(outing):
+                print("한타자가 너무 많이 발생해 근무 생성 실패");
+                return -1
+            else:
+                max_work[3] += size_1
+                for __ in range(size_1):
+                    a = random.choice(outing)
+                    outing.remove(a)
+                    no_return_work.append(a)
+                size_2 += size_1
+                size_1 = size_3 = 0
+                hes_2 = copy.deepcopy(real_worker)
 
         if size_1 > 0 and is_weekend == 1:  # 1타자 자동 계산
             start_1 = 'Member12'  # input("1타 시작 입력 : ")
@@ -179,17 +184,12 @@ def re_people(check, size_2, today_group):
 
 
 # 재배치 함수
-def re_arrange(max_work, temp_work_t, check_t, today_group, start=0):
+def re_arrange(max_work, temp_work, check, today_group, start=0):
     count = 0
-    # temp_work = copy.deepcopy(temp_work_t)
-    # check = copy.deepcopy(check_t)
-    temp_work = temp_work_t
-    check = check_t
-
     for i in range(len(max_work)):  # 6 4 8 12 근무 시간대 별로 돌린다.
         if check[i] < 0:  # 지금 시간대에 배치된 사람이 만약 최대 근무타수를 초과한다면 음수 이므로 if돌린다
-            t = check[i]
-            for __ in range(abs(t)):  # 넘은 사람만큼 빼내야 하므로 넘은 사람만큼 루프를 돌린다. 음수를 넣을순 없으니 절댓값
+            temp = check[i]
+            for __ in range(abs(temp)):  # 넘은 사람만큼 빼내야 하므로 넘은 사람만큼 루프를 돌린다. 음수를 넣을순 없으니 절댓값
                 while True:
                     check = overtime(max_work, temp_work)  # 현재 초과, 미달한 근무 시간을 다시 체크해 준다.
                     poor_man = random.choice(temp_work[i])  # 지금 시간대에서 랜덤으로 한명을 뽑는다.
@@ -229,18 +229,12 @@ def re_arrange(max_work, temp_work_t, check_t, today_group, start=0):
     return temp_work
 
 
-def re_arrange_2(temp_work_t, check_t, today_group, start=0):
-    # temp_work = copy.deepcopy(temp_work_t)
-    # check = copy.deepcopy(check_t)
-
-    temp_work = temp_work_t
-    check = check_t
-
+def re_arrange_2(temp_work, check, today_group, start=0):
     while True:  # 여기서는 타겟 명수로 배치되기 전까지는 함수가 끝나지 않는다.
         for i in range(len(check)):
             if check[i] < 0:
-                t = check[i]
-                for __ in range(abs(t)):
+                temp = check[i]
+                for __ in range(abs(temp)):
                     while True:
                         poor_man = random.choice(temp_work[i])
                         if today_group == 'B':
@@ -260,10 +254,10 @@ def re_arrange_2(temp_work_t, check_t, today_group, start=0):
                             check[intersect[0]] -= 1
                             break
             if today_group == 'B':
-                if check[0] == 0 and check[1] == 0:  # 타겟으로 배치가 되었다면 루프 탈출
+                if check == [0, 0]:  # 타겟으로 배치가 되었다면 루프 탈출
                     return temp_work
             else:
-                if check[0] == 0 and check[1] == 0 and check[2] == 0 and check[3] == 0:  # 타겟으로 배치가 되었다면 루프 탈출
+                if check == [0, 0, 0, 0]:  # 타겟으로 배치가 되었다면 루프 탈출
                     return temp_work
 
 
@@ -271,8 +265,6 @@ def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2=-1):
     if size_2 != -1:
         if today_group != 'B':
             while True:
-                # check = copy.deepcopy(check_tt)
-                # temp_work = copy.deepcopy(temp_work_tt)
                 check = check_tt
                 temp_work = temp_work_tt
                 temp_work = re_arrange(max_work, temp_work, check, today_group)
@@ -291,10 +283,6 @@ def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2=-1):
         else:
             for i in range(2):
                 while True:
-                    #temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
-                    #max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
-                    #check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
-
                     temp_work_t = [temp_work_tt[2 * i], temp_work_tt[2 * i + 1]]
                     max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
                     check_t = [check_tt[2 * i], check_tt[2 * i + 1]]
@@ -305,8 +293,6 @@ def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2=-1):
 
                 check_t = overtime(max_work_t, temp_work_t)
                 target_t = re_people(check_t, size_2, today_group)
-                # if max(check_t) != sum(check_t) - max(check_t):
-                # 만약 2타자가 들어갈 수 없는 형태로 3타자가 들어갔다면 check가 target이 되도록 3타자 수를 조정
                 for j in range(2):
                     check_t[j] = check_t[j] - target_t[j]  # check 에서 target을 빼서 어느 시간대가 나와서 어느 시간대로 나와야하는지 체크
 
@@ -321,9 +307,6 @@ def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2=-1):
     else:
         if today_group != 'B':
             while True:
-              #  check = copy.deepcopy(check_tt)
-              #  temp_work = copy.deepcopy(temp_work_tt)
-              #  temp_work = re_arrange(max_work, temp_work, check, today_group)
                 check = check_tt
                 temp_work = temp_work_tt
                 temp_work = re_arrange(max_work, temp_work, check, today_group)
@@ -335,10 +318,6 @@ def re_assign(max_work, temp_work_tt, check_tt, today_group, size_2=-1):
         else:
             for i in range(2):
                 while True:
-                  #  temp_work_t = copy.deepcopy([temp_work_tt[2 * i], temp_work_tt[2 * i + 1]])
-                  #  max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
-                    #check_t = copy.deepcopy([check_tt[2 * i], check_tt[2 * i + 1]])
-
                     temp_work_t = [temp_work_tt[2 * i], temp_work_tt[2 * i + 1]]
                     max_work_t = copy.deepcopy([max_work[2 * i], max_work[2 * i + 1]])
                     check_t = [check_tt[2 * i], check_tt[2 * i + 1]]
@@ -428,15 +407,6 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
                         temp_work[2] += [tt]
             else:
                 temp_work[3] += outing
-        '''else:
-            if real_max_work[2] - max_work[2] > 0:
-                out_last_worker = random.sample(outing, real_max_work[2] - max_work[2])
-                temp_work[2] += out_last_worker
-                for tt in outing:
-                    if tt not in out_last_worker:
-                        temp_work[3] += [tt]
-            else:
-                temp_work[3] += outing'''
 
         for i in range(4):
             temp_work[i] += temp_work_2[i]

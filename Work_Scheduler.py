@@ -36,7 +36,7 @@ def make_column_list(mat, n):
     return list
 
 
-def jung_2times(workers, poor_man, max_place): #3타자 중 첫번째, 3번째 근무에 정출 2번 투입
+def jung_2times(workers, poor_man, max_place):  # 3타자 중 첫번째, 3번째 근무에 정출 2번 투입
     place_number = [1, 2, 3]
     unlucky = poor_man.wheres_he[:]
     max_place[unlucky.index(1)][0] -= 1  # unluck.index(1)은 첫번째 근무 시간
@@ -44,13 +44,13 @@ def jung_2times(workers, poor_man, max_place): #3타자 중 첫번째, 3번째 �
     unlucky.remove(1)
     a = random.choice(place_number)
     max_place[unlucky.index(1) + 1][a] -= 1
-    poor_man.work[a][unlucky.index(1) + 1] = 1 #정출을 제외한 근무지 2번째 시간에 투입
+    poor_man.work[a][unlucky.index(1) + 1] = 1  # 정출을 제외한 근무지 2번째 시간에 투입
     unlucky.remove(1)
     max_place[unlucky.index(1) + 2][0] -= 1
     poor_man.work[0][unlucky.index(1) + 2] = 1
     print(poor_man.name, end=' ')
     whatis_hwork(poor_man.work)
-    workers.remove(poor_man) #정출 2번 들어간 worker는 이후 있을 근무지 배정에서 
+    workers.remove(poor_man)  # 정출 2번 들어간 worker는 이후 있을 근무지 배정에서
 
 
 def jung_rearrange(workers, temp_jung, max_place):
@@ -106,7 +106,7 @@ def jung_rearrange(workers, temp_jung, max_place):
 
 def schedule_place(f_workers, f_outing):
     tt = []
-    for h in f_workers:  #한 타자들은 외출자로 간주하여 worker에서 제외시키고 outing에 대입
+    for h in f_workers:  # 한 타자들은 외출자로 간주하여 worker에서 제외시키고 outing에 대입
         if sum(h.wheres_he) == 1:
             f_outing.append(h)
             tt.append(h)
@@ -117,7 +117,7 @@ def schedule_place(f_workers, f_outing):
     count = 0
     f_workers = lets_make_rank(f_workers)
     escape = True
-    len_outing = len(f_outing[:]) #변하지 않는 한타자와 외출자의 수
+    len_outing = len(f_outing[:])  # 변하지 않는 한타자와 외출자의 수
     max_place = placetable[which_group][is_weekend - 1]
     deter = 0
 
@@ -148,10 +148,10 @@ def schedule_place(f_workers, f_outing):
                 outing = outing_4[2:]+outing_2[2:]'''
     while True:
         outing = copy.deepcopy(f_outing)
-        #outing = lets_make_rank(outing)  outing배열의 마지막 쪽에 한타자들을 위치하게끔 유도, 셔플돌리지 않는다.
+        # outing = lets_make_rank(outing)  outing배열의 마지막 쪽에 한타자들을 위치하게끔 유도, 셔플돌리지 않는다.
         workers = copy.deepcopy(f_workers)
         temp_jung = [[], [], [], []]
-        if len(outing) <= 2: #앞으로 있을 정출 근무자 수 계산을 위해 한타자들 중 2명을 정출 배열에 투입
+        if len(outing) <= 2:  # 앞으로 있을 정출 근무자 수 계산을 위해 한타자들 중 2명을 정출 배열에 투입
 
             workers = workers + outing
 
@@ -159,14 +159,14 @@ def schedule_place(f_workers, f_outing):
 
         else:
             workers = workers + outing[0:2]
-            outing = outing[2:] #outing은 정출 배열에 제외되고 나머지 근무지에 투입될 예정
+            outing = outing[2:]  # outing은 정출 배열에 제외되고 나머지 근무지에 투입될 예정
 
         if int(sum([max_place[i][0] for i in range(4)])) >= len(workers):  # 현 근무자수보다 정출 타수가 많거나 같을 경우
-            poors = abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers)) #정출 두번들어가는 사람의 수
+            poors = abs(int(sum([max_place[i][0] for i in range(4)])) - len(workers))  # 정출 두번들어가는 사람의 수
             if work_group[which_group] == 'B':
                 for __ in range(poors):
                     for i in range(len(workers)):
-                        if sum(workers[i].wheres_he) == 3 and workers[i].wheres_he[2]==1:  # 3타자 중, 새벽 2시에 근무 있는 사람을 두번줌, 4시는 outing이 채울 예정
+                        if sum(workers[i].wheres_he) == 3 and workers[i].wheres_he[2] == 1:  # 3타자 중, 새벽 2시에 근무 있는 사람을 두번줌, 4시는 outing이 채울 예정
                             jung_2times(workers, workers[i], max_place)
                             break
             else:
@@ -176,29 +176,24 @@ def schedule_place(f_workers, f_outing):
                             if sum(workers[i].wheres_he) == 3 and workers[i].wheres_he[3] == 0:  # 3타자 중에서 정출을 두번 줌
                                 jung_2times(workers, workers[i], max_place)
                                 break
-                elif len_outing ==0:
-                    for __ in range(poors):
-                        for i in range(len(workers)):
-                            if sum(workers[i].wheres_he) == 3 and workers[i].wheres_he[3]==1:  # 3타자 중, 막타 있는 사람만 줌
-                                jung_2times(workers, workers[i], max_place)
-                                break
-                else: #outing 길이가 1인 경우, 에라 모르겠다.
+
+                else:  # outing 길이가 1인 경우, 에라 모르겠다.
                     for __ in range(poors):
                         for i in range(len(workers)):
                             if sum(workers[i].wheres_he) == 3:  # 3타자 중, 막타 있는 사람만 줌
                                 jung_2times(workers, workers[i], max_place)
                                 break
-                    
+
             # result = jung_rearrange(workers, temp_jung, max_place)
             r_workers = copy.deepcopy(workers)
-            #r_temp_jung = copy.deepcopy(temp_jung)
+            # r_temp_jung = copy.deepcopy(temp_jung)
             real_max_place = copy.deepcopy(max_place)
             result = jung_rearrange(r_workers, temp_jung, real_max_place)
             if result == 0:
                 workers = r_workers
                 max_place = real_max_place
                 break
-            #break   ?? 이거 
+
             else:
                 continue
 
@@ -208,14 +203,14 @@ def schedule_place(f_workers, f_outing):
             temp_workers = workers[no_jung:]  # 외출자들은 무조건 정출에 포함되게끔 만든 트릭
             # result = jung_rearrange(temp_workers, temp_jung, max_place)
             r_workers = copy.deepcopy(temp_workers)
-            #r_temp_jung = copy.deepcopy(temp_jung)
+            # r_temp_jung = copy.deepcopy(temp_jung)
             real_max_place = copy.deepcopy(max_place)
             result = jung_rearrange(r_workers, temp_jung, real_max_place)
             if result == 0:
                 workers[no_jung:] = r_workers
                 max_place = real_max_place
                 break
-            else:  #result가 0이 아니라면 처음 while문으로 돌아가도록 continue를 작성해줘야 함, 아 아니네 indent로 확인...
+            else:  # result가 0이 아니라면 처음 while문으로 돌아가도록 continue를 작성해줘야 함, 아 아니네 indent로 확인...
                 continue
 
     # 정출 제외한 근무지 무한 루프
