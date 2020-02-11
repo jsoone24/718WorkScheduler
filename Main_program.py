@@ -25,7 +25,6 @@ def printing(tt):
 
 if __name__ == '__main__':
     scheduled_work, real_worker, outing = Time_Scheduler.scheduler(Timetable, which_group, work_group, is_weekend, p2)
-
     if scheduled_work != -1:
         while True:
             real_worker_t = copy.deepcopy(real_worker)

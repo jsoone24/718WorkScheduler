@@ -4,8 +4,8 @@ import copy
 
 # 외출자, 사고자 입력, 실 근무자 계산
 def whos_out(p2, today_group, max_work):
-    acci = ['Member01', 'Member06', 'Member11', 'Member21', 'Member07', 'Member17', 'Member16']  # input("사고자 입력 : ").split()
-    out = []  # ("외출자 입력 : ").split()
+    acci = ['Member01', 'Member13']  # input("사고자 입력 : ").split()
+    out = ['Member06', 'Member11', 'Member21', 'Member07', 'Member17', 'Member16', 'Member18', 'Member08', 'Member15', 'Member14', 'Member04']  # ("외출자 입력 : ").split()
     real_worker, accident, outing, no_return_work, raw_outing = [], [], [], [], []
 
     for member in p2:
@@ -123,7 +123,7 @@ def whos_3_2(real_worker, outing, today_group, temp_work, max_work, is_weekend, 
                     no_return_work.append(a)
                 size_2 += size_1
                 size_1 = size_3 = 0
-                hes_2 = copy.deepcopy(real_worker)
+                hes_2 = real_worker
 
         if size_1 > 0 and is_weekend == 1:  # 1타자 자동 계산
             start_1 = 'Member12'  # input("1타 시작 입력 : ")
@@ -373,6 +373,7 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
     hes_3, hes_2, hes_1, temp_work, max_work, outing, size_2, size_1, long_nighter = whos_3_2(real_worker, outing, today_group, temp_work, max_work, is_weekend, no_return_work, raw_outing)
 
     if hes_1 == []:  # 3타자, 2타자
+        Flag_1 = 0
         if len(hes_3) != 0:
             for worker in hes_3:  # 3타자 우선
                 for i in range(3):
@@ -383,8 +384,10 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
             temp_work, max_work_2 = re_assign(max_work, temp_work, check, today_group, size_2)
             # 2타자로 넘기기 전에 2타자가 들어갈 수 있도록 3타자 위치 조정,max_work_2는 조정에 따른 2타자가 들어갈 수 있는 위치, 최대 타수
         else:  # 올두타
+            real_worker += long_nighter
             max_work_2 = copy.deepcopy(max_work)
-            temp_work_2 = copy.deepcopy(temp_work)
+            temp_work_2 = temp_work
+            Flag_1 = 1
 
         for worker in hes_2:
             for i in range(2):
@@ -392,24 +395,26 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
                 worker.wheres_he[today_time.index(worker.times2[today_group][i])] = 1
 
         check_2 = overtime(max_work_2, temp_work_2)  # 3타자와 동일
-        temp_work_2, xxx = re_assign(max_work_2, temp_work_2, check_2, today_group, size_2)  # 3타자와 동일, xxx는 딱히 필요없는 변수라 xxx라고 함
+        temp_work_2, max_work_2 = re_assign(max_work_2, temp_work_2, check_2, today_group, size_2)  # 3타자와 동일, xxx는 딱히 필요없는 변수라 xxx라고 함
 
         if today_group != 'B':
             temp_work[3] += outing
         else:
-            if real_max_work[3] - len(outing) < 0:  # B조에서 복귀타 수가 막타자(4시근무) 수 초과 시
-                out_last_worker = random.sample(outing, real_max_work[3])
-                temp_work[3] += out_last_worker
+            if real_max_work[2] - max_work[2] > 0:
+                out_last_worker = random.sample(outing, real_max_work[2] - max_work[2])
+                temp_work[2] += out_last_worker
+                for member in out_last_worker:
+                    member.wheres_he[3] = 0
+                    member.wheres_he[2] = 1
                 for tt in outing:
                     if tt not in out_last_worker:
-                        tt.wheres_he[3] = 0
-                        tt.wheres_he[2] = 1
-                        temp_work[2] += [tt]
+                        temp_work[3] += [tt]
             else:
                 temp_work[3] += outing
 
-        for i in range(4):
-            temp_work[i] += temp_work_2[i]
+        if Flag_1 != 1:
+            for i in range(4):
+                temp_work[i] += temp_work_2[i]
 
     else:
         for worker in hes_2:  # 2타자 우선
@@ -434,14 +439,12 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
         if today_group != 'B':
             temp_work[3] += outing
         else:
-            if real_max_work[3] - len(outing) < 0:  # B조에서 복귀타 수가 막타자(4시근무) 수 초과 시
-                out_last_worker = random.sample(outing, real_max_work[3])
-                temp_work[3] += out_last_worker
+            if real_max_work[2] - max_work[2] > 0:
+                out_last_worker = random.sample(outing, real_max_work[2] - max_work[2])
+                temp_work[2] += out_last_worker
                 for tt in outing:
                     if tt not in out_last_worker:
-                        tt.wheres_he[3] = 0
-                        tt.wheres_he[2] = 1
-                        temp_work[2] += [tt]
+                        temp_work[3] += [tt]
             else:
                 temp_work[3] += outing
 
@@ -450,7 +453,7 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
 
     for i in range(4):
         if len(temp_work[i]) < real_max_work[i]:
-            print("Member21은 프로그램에 하등 도움이 안됨")
+            print("Member21 한 것 없음")
             return -1, -1, -1
 
     print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_1, hes_2, hes_3, long_nighter)
