@@ -1,11 +1,13 @@
 import random
 import copy
 
-
-# 외출자, 사고자 입력, 실 근무자 계산
+acci = []
+out = []
 def whos_out(p2, today_group, max_work):
-    acci = ['Member01', 'Member13']  # input("사고자 입력 : ").split()
-    out = ['Member06', 'Member11', 'Member21', 'Member07', 'Member17', 'Member16', 'Member18', 'Member08', 'Member15', 'Member14', 'Member04']  # ("외출자 입력 : ").split()
+    acci = ['Member01', 'Member06', 'Member11', 'Member21', 'Member07', 'Member17', 'Member16', 'Member18']  # input("사고자 입력 : ").split()
+    out = []  # ("외출자 입력 : ").split()
+    #acci = input("사고자 입력 : ").split()
+    #out = input("외출자 입력 : ").split()
     real_worker, accident, outing, no_return_work, raw_outing = [], [], [], [], []
 
     for member in p2:
@@ -67,6 +69,9 @@ def whos_3_2(real_worker, outing, today_group, temp_work, max_work, is_weekend, 
     if is_weekend == 2:  # 주말에는 size_2가 2타자 + 복귀타 없는 외출자로 계산되서 빼줌
         size_2 -= len(no_return_work)
         size_3 = real_worker_size - size_2
+        if size_2+size_3<=max(max_work):
+            print("사고자, 외출자가 너무 많습니다. 현원 : ", size_2+size_3)
+            return -1
 
     if today_group == 'B':  # 외출자들 수 만큼 미리 최대 근무 타수 조정
         if max_work[3] - len(outing) < 0:  # B조에서 복귀타 수가 막타자(4시근무) 수 초과 시
@@ -454,8 +459,9 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
     for i in range(4):
         if len(temp_work[i]) < real_max_work[i]:
             print("Member21 한 것 없음")
-            return -1, -1, -1
+            return -1
 
     print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_1, hes_2, hes_3, long_nighter)
+    #print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_1, hes_2, hes_3, long_nighter)
 
-    return temp_work, real_worker, outing
+    return temp_work, real_worker, outing, today_time, today_group, p2, accident, no_return_work, hes_1, hes_2, hes_3, long_nighter
