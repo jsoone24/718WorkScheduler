@@ -128,30 +128,7 @@ def schedule_place(f_workers, f_outing):
     deter = 0
 
     # 정출에 들어가는 사람 리스트
-    '''if work_group[which_group] == 'B':  # 외출자 수 계산 후 정출 들어갈 외출자 pick
-        if len(outing) <= 6:
-            if len(outing)<=2:
-                workers = workers + outing
-                outing = []
-            else:
-                workers = workers + outing[:2]
-                outing=outing[2:]
 
-        else:
-            outing_4=[]
-            outing_2=[]
-            for h in outing:
-                if h.wheres_he[3]==1:
-                    outing_4.append(h)
-                else:
-                    outing_2.append(h)
-            outing=[]
-            if len_outing==7:
-                workers= workers + outing_4[0:2] + outing_2
-                outing= outing_4[2:]
-            elif len_outing>7:
-                workers = workers + outing_4[0:2]+outing_2[:2]
-                outing = outing_4[2:]+outing_2[2:]'''
     while True:
         outing = copy.deepcopy(f_outing)
         # outing = lets_make_rank(outing)  outing배열의 마지막 쪽에 한타자들을 위치하게끔 유도, 셔플돌리지 않는다. ? 왜 이렇게 해놨지??
@@ -259,12 +236,12 @@ def schedule_place(f_workers, f_outing):
                         deter += 1
 
             if deter == 0:
-                print(sec_count)
+                # print(sec_count)
                 break
 
             else:
 
-                sec_count += 1  # w
+                sec_count += 1
                 deter = 0
                 if sec_count == 2000:
                     escape = False  # count가 적당히 커지면 어차피 안되는 거니까 함수 처음부터 다시 돌리기

@@ -29,7 +29,7 @@ class MyApp(QWidget):
         self.setLayout(grid)
 
         self.setWindowTitle('718근무 프로그램')
-        self.setGeometry(100, 100, 1500, 800)
+        self.setGeometry(100, 100, 500, 700)
         self.show()
 
     def make_work(self):

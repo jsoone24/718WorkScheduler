@@ -1,8 +1,9 @@
 import datetime
+import random
 
 # 오늘 무슨 조인지
 start_2020_01_01_B = datetime.datetime(2020, 1, 1)  # 1월 1일 근무조
-today = datetime.datetime(2020, 2, 9)  # 오늘 날짜
+today = datetime.datetime(2020, 2, 13)  # 오늘 날짜
 which_group = ((today - start_2020_01_01_B).days + 1) % 3  # 나머지 0이면 A, 1이면 B, 2이면 C
 work_group = {0: 'A', 1: 'B', 2: 'C'}  # workgroup 에 which_group을 대입하면 오늘 무슨 조인지 문자로 파악 가능
 is_weekend = int(today.weekday() / 5) + 1  # 오늘 주말인지 아닌지 1이면 평일, 2이면 주말
@@ -82,3 +83,48 @@ p2 = [a1, a2, a3, a4, a5,
       a6, a7, a8, a9, a10, a11,
       a12, a13, a14, a15, a16,
       a17, a18, a19, a20, a21]
+
+# 외출자, 사고자 입력
+acci = []
+out = []
+
+
+def whos_out(p2, today_group, max_work):
+    # acci = input("사고자 입력 : ").split()
+    # out = input("외출자 입력 : ").split()
+    global acci
+    global out
+    acci = ['Member02', 'Member14', 'Member07', 'Member10']  # input("사고자 입력 : ").split()
+    out = ['Member17', 'Member11', 'Member18', 'Member01', 'Member08']  # ("외출자 입력 : ").split()
+
+    real_worker, accident, outing, no_return_work, raw_outing = [], [], [], [], []
+
+    for member in p2:
+        if member.name in acci:
+            accident.append(member)
+        if member.name in out:
+            outing.append(member)
+            raw_outing.append(member)
+    for member in p2:
+        if (member not in accident) and (member not in outing):
+            real_worker.append(member)
+
+    if today_group != 'B' and (max_work[3] - len(outing)) < 0:  # 외출자 수가 막타 수 보다 많을 때
+        for i in range(abs(max_work[3] - len(outing))):  # 막타자 수에서 외출자 수 빼고 그 사람 수 만큼 복귀타 없는 외출자 랜덤 선정
+            lucky_man = random.choice(outing)
+            outing.remove(lucky_man)
+            no_return_work.append(lucky_man)
+        for poor_man in outing:
+            poor_man.wheres_he[3] = 1
+    elif today_group == 'B' and max_work[2] + max_work[3] - len(outing) < 0:
+        for i in range(abs(max_work[2] + max_work[3] - len(outing))):
+            lucky_man = random.choice(outing)
+            outing.remove(lucky_man)
+            no_return_work.append(lucky_man)
+        for poor_man in outing:
+            poor_man.wheres_he[3] = 1
+    else:  # 위 경우 둘다 해당하지 않을 때는 외출자는 막타 픽스
+        for i in outing:
+            i.wheres_he[3] = 1
+
+    return real_worker, outing, accident, no_return_work, raw_outing  # 외출, 사고 없는 실 근무자, 외출자, 사고자
