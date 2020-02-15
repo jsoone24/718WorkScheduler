@@ -16,15 +16,21 @@ class MyApp(QWidget):
         self.acci.setPlaceholderText('사고자를 입력하세요')
         self.out = QLineEdit()
         self.out.setPlaceholderText('외출자를 입력하세요')
-        self.out.returnPressed.connect(self.make_work)
+        self.start = QLineEdit()
+        self.start.setPlaceholderText('근무1번 입력하세요')
+        self.start.returnPressed.connect(self.make_work)
+
         self.lbl = QLabel('근무결과')
         self.result = QTextEdit()
 
         grid = QGridLayout()
-        grid.addWidget(self.acci, 0, 0)
-        grid.addWidget(self.out, 1, 0)
-        grid.addWidget(self.lbl, 2, 0)
-        grid.addWidget(self.result, 3, 0)
+        grid.addWidget(self.check_today_group(), 0, 0)
+        grid.addWidget(self.check_isweekend(), 1, 0)
+        grid.addWidget(self.acci, 2, 0)
+        grid.addWidget(self.out, 3, 0)
+        grid.addWidget(self.start, 4, 0)
+        grid.addWidget(self.lbl, 5, 0)
+        grid.addWidget(self.result, 6, 0)
 
         self.setLayout(grid)
 
@@ -32,13 +38,69 @@ class MyApp(QWidget):
         self.setGeometry(100, 100, 500, 700)
         self.show()
 
+    def check_today_group(self):
+        groupbox = QGroupBox('오늘의 조')
+
+        self.radio1 = QRadioButton('A')
+        self.radio2 = QRadioButton('B')
+        self.radio3 = QRadioButton('C')
+        self.radio1.setChecked(True)
+
+        hbox = QHBoxLayout()
+        hbox.addWidget(self.radio1)
+        hbox.addWidget(self.radio2)
+        hbox.addWidget(self.radio3)
+        groupbox.setLayout(hbox)
+
+        return groupbox
+
+    def check_isweekend(self):
+        groupbox = QGroupBox('평일?주말?')
+
+        self.radio4 = QRadioButton('평일')
+        self.radio5 = QRadioButton('주말')
+        self.radio4.setChecked(True)
+
+        hbox = QHBoxLayout()
+        hbox.addWidget(self.radio4)
+        hbox.addWidget(self.radio5)
+        groupbox.setLayout(hbox)
+
+        return groupbox
+
     def make_work(self):
 
 
-        Time_Scheduler.acci = self.acci.text()
-        Time_Scheduler.out = self.out.text()
-        self.temp_work, self.real_worker, self.outing, self.today_time, self.today_group, self.p2, self.accident, self.no_return_work, self.hes_1, self.hes_2, self.hes_3, self.long_nighter = Time_Scheduler.scheduler(Timetable, which_group, work_group, is_weekend,
-                                                                       p2)
+        constants.acci = self.acci.text()
+        constants.out = self.out.text()
+        if self.radio1.isChecked():
+            constants.which_group = 0
+            if self.radio4.isChecked():
+                constants.is_weekend = 1
+            elif self.radio5.isChecked():
+                constants.is_weekend = 2
+        elif self.radio2.isChecked():
+            constants.which_group = 1
+            if self.radio4.isChecked():
+                constants.is_weekend = 1
+            elif self.radio5.isChecked():
+                constants.is_weekend = 2
+        elif self.radio3.isChecked():
+            constants.which_group = 2
+            if self.radio4.isChecked():
+                constants.is_weekend = 1
+            elif self.radio5.isChecked():
+                constants.is_weekend = 2
+
+
+
+        Time_Scheduler.start_1 = self.start.text()
+        Time_Scheduler.start_2 = self.start.text()
+
+
+
+        self.temp_work, self.real_worker, self.outing, self.today_time, self.today_group, self.p2, self.accident, self.no_return_work, self.hes_1, self.hes_2, self.hes_3, self.long_nighter = Time_Scheduler.scheduler(constants.Timetable, constants.which_group, constants.work_group, constants.is_weekend,
+                                                                       constants.p2)
 
         self.result.append("오늘 근무:" + self.today_group)
         self.result.append("총원 : " + str(len(self.p2)))
