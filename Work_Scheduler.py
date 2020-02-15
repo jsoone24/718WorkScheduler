@@ -29,7 +29,6 @@ def random_index_except_zero(list):
     return a
 
 
-
 def make_column_list(mat, n):
     list = []
     for i in range(len(mat)):
@@ -109,7 +108,7 @@ def jung_rearrange(workers, temp_jung, max_place):
 
 def schedule_place(f_workers, f_outing):
     tt = []
-    jung_2 = []  #정출 두번뛰는 worker들 리스트
+    jung_2 = []  # 정출 두번뛰는 worker들 리스트
     for h in f_workers:  # 한 타자들은 외출자로 간주하여 worker에서 제외시키고 outing에 대입
         if sum(h.wheres_he) == 1:
             f_outing.append(h)
@@ -119,7 +118,7 @@ def schedule_place(f_workers, f_outing):
             f_workers.remove(h)
 
     sec_count = 0  # 두번째 while문 돌릴 때 쓰는 count
-    first_count = 0  #첫번째 while문 돌릴 때 쓰는 count
+    first_count = 0  # 첫번째 while문 돌릴 때 쓰는 count
 
     escape = True
     len_outing = len(f_outing[:])  # 변하지 않는 한타자와 외출자의 수
@@ -211,49 +210,46 @@ def schedule_place(f_workers, f_outing):
                     break
                 continue
 
-
     # 정출 제외한 근무지 무한 루프
     workers = workers + outing
-    try:
-        while True:
-            real_workers = copy.deepcopy(workers)
-            r_max_place = copy.deepcopy(max_place)
-            for h in real_workers:
-                n = 0
-                for t in h.wheres_he:
-                    if t == 1:
-                        a = random_index_except_zero(r_max_place[n])
-                        if a == -1:
-                            print("근무 짜기가 실패하였습니다. 다시 돌려주세요 ㅎㅎ")
-                            return -1
-                        r_max_place[n][a] = r_max_place[n][a] - 1
-                        h.work[a][n] = h.work[a][n] + 1
-                        n += 1
-                    else:
-                        n += 1
-                for list in h.work:
-                    if sum(list) >= 2:
-                        deter += 1
+    while True:
+        real_workers = copy.deepcopy(workers)
+        r_max_place = copy.deepcopy(max_place)
+        for h in real_workers:
+            n = 0
+            for t in h.wheres_he:
+                if t == 1:
+                    a = random_index_except_zero(r_max_place[n])
+                    if a == -1:
+                        #print("근무 짜기가 실패하였습니다. 다시 돌려주세요 ㅎㅎ")
+                        return -1
+                    r_max_place[n][a] = r_max_place[n][a] - 1
+                    h.work[a][n] = h.work[a][n] + 1
+                    n += 1
+                else:
+                    n += 1
+            for list in h.work:
+                if sum(list) >= 2:
+                    deter += 1
 
-            if deter == 0:
-                # print(sec_count)
+        if deter == 0:
+            # print(sec_count)
+            break
+
+        else:
+            sec_count += 1
+            deter = 0
+            if sec_count == 2000:
+                escape = False  # count가 적당히 커지면 어차피 안되는 거니까 함수 처음부터 다시 돌리기
                 break
 
-            else:
-
-                sec_count += 1
-                deter = 0
-                if sec_count == 2000:
-                    escape = False  # count가 적당히 커지면 어차피 안되는 거니까 함수 처음부터 다시 돌리기
-                    break
-    except:
-        escape = False
     if escape == False:
-        print("근무 짜기가 실패하였습니다. 다시 돌려주세요 ㅎㅎ")
+        #print("근무 짜기가 실패하였습니다. 다시 돌려주세요 ㅎㅎ")
         return -1
-    for poor_man in jung_2:
+    '''for poor_man in jung_2: #정출 2번뛴사람
         print(poor_man.name, end=' ')
-        whatis_hwork(poor_man.work)
+        whatis_hwork(poor_man.work)'''
+    real_workers = jung_2 + real_workers
 
     return real_workers
 

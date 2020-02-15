@@ -3,6 +3,8 @@
 import sys
 from PyQt5.QtWidgets import *
 from Main_program import *
+
+
 from constants import *
 
 class MyApp(QWidget):
@@ -10,6 +12,8 @@ class MyApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.real_worker_t = []
+        self.outing_t = []
 
     def initUI(self):
         self.acci = QLineEdit()
@@ -91,14 +95,8 @@ class MyApp(QWidget):
                 constants.is_weekend = 1
             elif self.radio5.isChecked():
                 constants.is_weekend = 2
-
-
-
         Time_Scheduler.start_1 = self.start.text()
         Time_Scheduler.start_2 = self.start.text()
-
-
-
         self.temp_work, self.real_worker, self.outing, self.today_time, self.today_group, self.p2, self.accident, self.no_return_work, self.hes_1, self.hes_2, self.hes_3, self.long_nighter = Time_Scheduler.scheduler(constants.Timetable, constants.which_group, constants.work_group, constants.is_weekend,
                                                                        constants.p2)
 
@@ -118,7 +116,17 @@ class MyApp(QWidget):
         for i in range(4):
             self.result.append(str(self.today_time[i]) + "\t" + str([x.name for x in self.temp_work[i]]))
 
-
+        '''while True:
+            self.real_worker_t = copy.deepcopy(self.real_worker)
+            self.outing_t = copy.deepcopy(self.outing)
+            self.workers = Work_Scheduler.schedule_place(self.real_worker_t, self.outing_t)
+            if self.workers != -1:
+                self.result.append("hi")
+                break
+            if self.workers != -1:
+                for h in self.workers:
+                    self.result.append(str(h.name))#print(h.name, end=' ')
+                    #Work_Scheduler.whatis_hwork(h.work)'''
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

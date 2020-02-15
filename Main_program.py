@@ -23,4 +23,3 @@ if __name__ == '__main__':
             for h in result:
                 print(h.name, end=' ')
                 Work_Scheduler.whatis_hwork(h.work)
-
