@@ -9,17 +9,16 @@ which_group = copy.deepcopy(constants.which_group)
 work_group = copy.deepcopy(constants.work_group)
 p2 = copy.deepcopy(constants.p2)
 
-if __name__ == '__main__':
-    scheduled_work, real_worker, outing = Time_Scheduler.scheduler(Timetable, which_group, work_group, is_weekend, p2)
-    if scheduled_work != -1:
-        while True:
-            real_worker_t = copy.deepcopy(real_worker)
-            outing_t = copy.deepcopy(outing)
-            result = Work_Scheduler.schedule_place(real_worker_t, outing_t)
-            if result != -1:
-                break
-
+scheduled_work, real_worker, outing = Time_Scheduler.scheduler(Timetable, which_group, work_group, is_weekend, p2)
+if scheduled_work != -1:
+    while True:
+        real_worker_t = copy.deepcopy(real_worker)
+        outing_t = copy.deepcopy(outing)
+        result = Work_Scheduler.schedule_place(real_worker_t, outing_t)
         if result != -1:
-            for h in result:
-                print(h.name, end=' ')
-                Work_Scheduler.whatis_hwork(h.work)
+            break
+
+    if result != -1:
+        for h in result:
+            print(h.name, end=' ')
+            Work_Scheduler.whatis_hwork(h.work)

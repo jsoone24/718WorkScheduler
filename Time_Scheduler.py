@@ -49,7 +49,7 @@ def whos_3_2(real_worker, outing, today_group, temp_work, max_work, is_weekend, 
 
     if size_3 >= 0:
         if size_2 > 0 and is_weekend == 1:  # 2타자 자동 계산
-            #start_2 = 'Member12'  # input("2타 시작 입력 : ")
+            # start_2 = 'Member12'  # input("2타 시작 입력 : ")
             for member in real_worker:
                 if member.name == start_2:
                     index = real_worker.index(member)
@@ -96,7 +96,7 @@ def whos_3_2(real_worker, outing, today_group, temp_work, max_work, is_weekend, 
                 hes_2 = real_worker
 
         if size_1 > 0 and is_weekend == 1:  # 1타자 자동 계산
-            #start_1 = 'Member12'  # input("1타 시작 입력 : ")
+            # start_1 = 'Member12'  # input("1타 시작 입력 : ")
             for member in real_worker:
                 if member.name == start_1:
                     index = real_worker.index(member)
@@ -431,9 +431,8 @@ def scheduler(Timetable, which_group, work_group, is_weekend, p2):
         if len(temp_work[i]) < real_max_work[i]:
             return -1
 
-    print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_1, hes_2,
-               hes_3, long_nighter)
+    # print_work(today_time, today_group, temp_work, p2, accident, outing, no_return_work, real_worker, hes_1, hes_2,               hes_3, long_nighter)
 
-    #return temp_work, real_worker, outing
+    # return temp_work, real_worker, outing
 
     return temp_work, real_worker, outing, today_time, today_group, p2, accident, no_return_work, hes_1, hes_2, hes_3, long_nighter

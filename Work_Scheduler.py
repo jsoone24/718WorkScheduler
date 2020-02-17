@@ -1,13 +1,6 @@
 import constants
 import random
 import copy
-import pprint
-
-Timetable = copy.deepcopy(constants.Timetable)
-work_group = copy.deepcopy(constants.work_group)
-which_group = copy.deepcopy(constants.which_group)
-is_weekend = copy.deepcopy(constants.is_weekend)
-
 
 def lets_make_rank(args):  # 리스트 셔플하기
     h_list = []
@@ -50,8 +43,6 @@ def jung_2times(workers, poor_man, max_place, jung_2):  # 3타자 중 첫번째,
     max_place[unlucky.index(1) + 2][0] -= 1
     poor_man.work[0][unlucky.index(1) + 2] = 1
     jung_2.append(poor_man)
-    # print(poor_man.name, end=' ')
-    # whatis_hwork(poor_man.work)
     workers.remove(poor_man)  # 정출 2번 들어간 worker는 이후 있을 근무지 배정에서
 
 
@@ -68,7 +59,6 @@ def jung_rearrange(workers, temp_jung, max_place):
     check = []
     for i in range(4):
         check.append(max_place[i][0])
-    # print(check)
     for i in range(4):  # 6 4 8 12 근무 시간대 별로 돌린다.
         if check[3 - i] < 0:  # 지금 시간대에 배치된 사람이 만약 최대 정출 타수를 초과한다면 음수 이므로 if돌린다
             for j in range(abs(check[3 - i])):  # 넘은 사람만큼 빼내야 하므로 넘은 사람만큼 루프를 돌린다. 음수를 넣을순 없으니 절댓값
@@ -106,7 +96,8 @@ def jung_rearrange(workers, temp_jung, max_place):
         return -1
 
 
-def schedule_place(f_workers, f_outing):
+def schedule_place(f_workers, f_outing, is_weekend, work_group, which_group):
+    print([[x.name, x.wheres_he] for x in f_workers])
     tt = []
     jung_2 = []  # 정출 두번뛰는 worker들 리스트
     for h in f_workers:  # 한 타자들은 외출자로 간주하여 worker에서 제외시키고 outing에 대입
@@ -125,6 +116,7 @@ def schedule_place(f_workers, f_outing):
     placetable = copy.deepcopy(constants.placetable)
     max_place = placetable[which_group][is_weekend - 1]
     deter = 0
+
 
     # 정출에 들어가는 사람 리스트
 
@@ -221,7 +213,6 @@ def schedule_place(f_workers, f_outing):
                 if t == 1:
                     a = random_index_except_zero(r_max_place[n])
                     if a == -1:
-                        #print("근무 짜기가 실패하였습니다. 다시 돌려주세요 ㅎㅎ")
                         return -1
                     r_max_place[n][a] = r_max_place[n][a] - 1
                     h.work[a][n] = h.work[a][n] + 1
@@ -233,7 +224,6 @@ def schedule_place(f_workers, f_outing):
                     deter += 1
 
         if deter == 0:
-            # print(sec_count)
             break
 
         else:
@@ -244,16 +234,14 @@ def schedule_place(f_workers, f_outing):
                 break
 
     if escape == False:
-        #print("근무 짜기가 실패하였습니다. 다시 돌려주세요 ㅎㅎ")
         return -1
-    '''for poor_man in jung_2: #정출 2번뛴사람
-        print(poor_man.name, end=' ')
-        whatis_hwork(poor_man.work)'''
+
     real_workers = jung_2 + real_workers
 
     return real_workers
 
 
+'''
 def whatis_hwork(mat):
     t = [''] * 4
     strr = ['정출', '별정', '별후', '서남문']
@@ -264,3 +252,4 @@ def whatis_hwork(mat):
                 print("%d%4s" % (Timetable[which_group][0][i], strr[j]), end=' ')
                 break
     print()
+'''

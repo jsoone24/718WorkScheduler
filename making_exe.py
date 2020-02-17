@@ -1,19 +1,18 @@
-#pip --trusted-host pypi.org --trusted-host files.pythonhosted.org install 라이브러리명
-#pip 내부망 때문에 설치 안될 시 해결
+# pip --trusted-host pypi.org --trusted-host files.pythonhosted.org install 라이브러리명
+# pip 내부망 때문에 설치 안될 시 해결
 import sys
 from PyQt5.QtWidgets import *
-from Main_program import *
+import Time_Scheduler
+import Work_Scheduler
+import constants
+import copy
 
-
-from constants import *
 
 class MyApp(QWidget):
 
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.real_worker_t = []
-        self.outing_t = []
 
     def initUI(self):
         self.acci = QLineEdit()
@@ -39,7 +38,7 @@ class MyApp(QWidget):
         self.setLayout(grid)
 
         self.setWindowTitle('718근무 프로그램')
-        self.setGeometry(100, 100, 500, 700)
+        self.setGeometry(100, 100, 700, 900)
         self.show()
 
     def check_today_group(self):
@@ -116,17 +115,24 @@ class MyApp(QWidget):
         for i in range(4):
             self.result.append(str(self.today_time[i]) + "\t" + str([x.name for x in self.temp_work[i]]))
 
-        '''while True:
-            self.real_worker_t = copy.deepcopy(self.real_worker)
-            self.outing_t = copy.deepcopy(self.outing)
-            self.workers = Work_Scheduler.schedule_place(self.real_worker_t, self.outing_t)
-            if self.workers != -1:
-                self.result.append("hi")
-                break
-            if self.workers != -1:
-                for h in self.workers:
-                    self.result.append(str(h.name))#print(h.name, end=' ')
-                    #Work_Scheduler.whatis_hwork(h.work)'''
+        if self.temp_work != -1:
+            while True:
+                real_worker_t = copy.deepcopy(self.real_worker)
+                outing_t = copy.deepcopy(self.outing)
+                workers = Work_Scheduler.schedule_place(real_worker_t, outing_t, constants.is_weekend, constants.work_group, constants.which_group)
+                if workers != -1:
+                    self.result.append("\n==========================근무표==========================\n")
+                    break
+        for h in workers:
+            t = ["                "] * 4
+            strr = ['본정문', '별정문', '별후문', '서남문']
+            for i in range(4):
+                for j in range(4):
+                    if h.work[j][i] == 1:
+                        t[i] = str(constants.Timetable[constants.which_group][0][i]) + " " + strr[j]
+                        # t.remove("")
+                        break
+            self.result.append(str(h.name) + str("%8s\t%8s\t%8s\t%8s" % (t[0], t[1], t[2], t[3])))
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
