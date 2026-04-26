@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ user.name }} 편집{% endblock %}
+{% block content %}
+<h1>대원 편집: {{ user.name }}</h1>
+
+<div class="card">
+    <form action="/users/{{ user.id }}/edit" method="post" class="stacked">
+        <div>
+            <label for="name">이름</label>
+            <input type="text" id="name" name="name" value="{{ user.name }}" required>
+        </div>
+        <div>
+            <label>
+                <input type="checkbox" name="active" {% if user.active %}checked{% endif %}>
+                활성 (체크 해제 시 근무 배정에서 제외)
+            </label>
+        </div>
+
+        <h3>선호 시간</h3>
+        <p class="muted">
+            쉼표로 구분된 시간 라벨 (constants.py 형식: A=6,4,8,12 / B=8,12,2,4 / C=10,2,6,22).
+            3타: 3타 근무일 선호 시간 (3개) · 2타: 2타 근무일 선호 시간 (2개).
+        </p>
+
+        {% for g in ['A', 'B', 'C'] %}
+            {% set p = user.preferences.get(g) %}
+            <div>
+                <label>{{ g }}조 3타</label>
+                <input type="text" name="times3_{{ g.lower() }}"
+                       value="{{ p.times3|join(',') if p else '' }}"
+                       placeholder="예: 6,4,8">
+            </div>
+            <div>
+                <label>{{ g }}조 2타</label>
+                <input type="text" name="times2_{{ g.lower() }}"
+                       value="{{ p.times2|join(',') if p else '' }}"
+                       placeholder="예: 6,8">
+            </div>
+        {% endfor %}
+
+        <div>
+            <button type="submit">저장</button>
+            <a href="/users" class="btn secondary">취소</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

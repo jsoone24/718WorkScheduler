@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}대원 관리{% endblock %}
+{% block content %}
+<h1>대원 관리</h1>
+
+<div class="card">
+    <h2>새 대원 추가</h2>
+    <form action="/users" method="post" class="inline">
+        <div>
+            <label for="name">이름</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <button type="submit">추가</button>
+    </form>
+    <p class="muted">추가 후 편집 화면에서 선호 시간을 입력하세요.</p>
+</div>
+
+<div class="card">
+    <h2>전체 명단 ({{ users|length }}명)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>순번</th>
+                <th>이름</th>
+                <th>상태</th>
+                <th>선호 시간 (A / B / C 3타)</th>
+                <th>액션</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u.display_order + 1 }}</td>
+                <td><strong>{{ u.name }}</strong></td>
+                <td>
+                    {% if u.active %}
+                        <span class="status-pill active">활성</span>
+                    {% else %}
+                        <span class="status-pill inactive">비활성</span>
+                    {% endif %}
+                </td>
+                <td class="muted">
+                    {% set pref_a = u.preferences.get('A') %}
+                    {% set pref_b = u.preferences.get('B') %}
+                    {% set pref_c = u.preferences.get('C') %}
+                    {{ pref_a.times3|join(',') if pref_a else '—' }}
+                    /
+                    {{ pref_b.times3|join(',') if pref_b else '—' }}
+                    /
+                    {{ pref_c.times3|join(',') if pref_c else '—' }}
+                </td>
+                <td>
+                    <a href="/users/{{ u.id }}/edit" class="btn small secondary">편집</a>
+                    <form action="/users/{{ u.id }}/toggle" method="post" style="display:inline">
+                        <button type="submit" class="small secondary">
+                            {% if u.active %}비활성화{% else %}활성화{% endif %}
+                        </button>
+                    </form>
+                    <form action="/users/{{ u.id }}/delete" method="post" style="display:inline"
+                          onsubmit="return confirm('정말 삭제? (이력은 복구되지 않습니다)')">
+                        <button type="submit" class="small danger">삭제</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

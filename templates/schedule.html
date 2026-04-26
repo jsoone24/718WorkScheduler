@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ date }} 근무표{% endblock %}
+{% block content %}
+<h1>{{ date }} 근무표 — {{ group_letter }}조 {% if is_weekend %}(주말){% else %}(평일){% endif %}</h1>
+
+<div class="card">
+    <h2>당일 상태</h2>
+    <p>
+        활성 대원 <strong>{{ active|length }}</strong>명 중
+        휴가 <strong>{{ statuses.values()|select('equalto', 'absent')|list|length }}</strong>명,
+        외출 <strong>{{ statuses.values()|select('equalto', 'outing')|list|length }}</strong>명,
+        긴밤 <strong>{{ statuses.values()|select('equalto', 'longnight')|list|length }}</strong>명
+    </p>
+
+    {% if issues %}
+        {% for issue in issues %}
+            <div class="warning">{{ issue }}</div>
+        {% endfor %}
+    {% endif %}
+
+    {% if not has_schedule %}
+    <form action="/schedule/{{ date }}/generate" method="post">
+        <button type="submit">근무표 생성하기</button>
+    </form>
+    {% else %}
+    <form action="/schedule/{{ date }}/generate" method="post" style="display:inline"
+          onsubmit="return confirm('근무표를 다시 생성하시겠습니까? 기존 결과가 덮어쓰기 됩니다.')">
+        <button type="submit" class="secondary">재생성</button>
+    </form>
+    {% endif %}
+</div>
+
+{% if has_schedule %}
+{% set status_label = {'absent': '휴가', 'outing': '외출', 'strike': '타격대', 'longnight': '긴밤자'} %}
+{% set status_class = {'absent': 'status-pill absent', 'outing': 'status-pill outing', 'strike': 'cell-strike', 'longnight': 'status-pill longnight'} %}
+<div class="card">
+    <h2>슬롯별 배치</h2>
+    <div class="slot-grid">
+        {% for s in range(4) %}
+        <div class="slot-card">
+            <h3>{{ '%02d'|format(slot_24h[times[s]]) }}시</h3>
+            {% for l in range(4) %}
+            {% set names = by_slot_site[(s, l)] %}
+            <div class="site-row">
+                <strong>{{ site_names[l] }}</strong>
+                <span class="cap">({{ names|length }}/{{ place_cap[s][l] }})</span>
+                <div>{{ names|join(', ') if names else '—' }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <h2>대원별 근무 횟수</h2>
+    <table>
+        <thead>
+            <tr><th>대원</th><th>횟수</th><th>슬롯 / 사유</th></tr>
+        </thead>
+        <tbody>
+            {% for name, slots in per_person %}
+            {% set st = statuses.get(name) %}
+            <tr>
+                <td><strong>{{ name }}</strong></td>
+                <td>{{ slots|length }}타</td>
+                <td>
+                    {% if slots %}
+                        {% for s, _l in slots %}
+                            {{ '%02d'|format(slot_24h[times[s]]) }}시{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                        {% if st == 'longnight' %}
+                            <span class="status-pill longnight" style="margin-left:0.5rem;">긴밤자</span>
+                        {% endif %}
+                    {% elif st == 'absent' %}
+                        <span class="status-pill absent">휴가/사고</span>
+                    {% elif st == 'outing' %}
+                        <span class="status-pill outing">외출</span>
+                    {% elif st == 'strike' %}
+                        <span class="cell-strike" style="padding:0.1rem 0.5rem; border-radius:999px; font-size:0.75rem;">타격대</span>
+                    {% else %}
+                        <span class="muted">(off)</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<p><a href="/" class="btn secondary">← 대시보드</a></p>
+{% endblock %}
