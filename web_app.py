@@ -45,6 +45,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+import domain
 import ledger
 import store
 import outing_scheduler
@@ -75,8 +76,10 @@ templates = Jinja2Templates(directory='templates')
 # Helpers
 # ---------------------------------------------------------------------------
 
-def compute_today_group(d: datetime.date) -> int:
-    return ((d - datetime.date(2020, 1, 1)).days + 1) % 3
+# Thin re-exports — kept locally so existing call sites don't have to change.
+# Actual implementations live in domain.py so the CLI driver shares them.
+compute_today_group = domain.today_group
+build_statuses = domain.build_statuses
 
 
 def parse_date(s: str) -> datetime.date:
@@ -87,29 +90,23 @@ def parse_date(s: str) -> datetime.date:
         raise HTTPException(status_code=400, detail=f"날짜 형식 오류: {s!r}")
 
 
-def build_statuses(d: datetime.date, active: list, longnight_names: set) -> dict:
-    """Construct the status dict the solver expects, from store data."""
-    vac_ids = store.vacation_user_ids_on(d)
-    out_ids = store.outing_user_ids_on(d)
-    strike_ids = store.strikeforce_user_ids_on(d)
-    by_id = {u.id: u for u in active}
-
-    statuses: dict = {}
-    for uid in vac_ids:
-        u = by_id.get(uid)
-        if u:
-            statuses[u.name] = STATUS_ABSENT
-    for uid in out_ids:
-        u = by_id.get(uid)
-        if u:
-            statuses[u.name] = STATUS_OUTING
-    for uid in strike_ids:
-        u = by_id.get(uid)
-        if u:
-            statuses[u.name] = STATUS_STRIKE
-    for name in longnight_names:
-        statuses[name] = STATUS_LONGNIGHT
-    return statuses
+def parse_csv_ints(s: str) -> list[int]:
+    """
+    Parse a comma-separated list of integers, ignoring blank tokens and
+    raising HTTPException on any non-numeric token (used by the user-edit
+    form for preference hour lists).
+    """
+    out: list[int] = []
+    for raw in s.replace(' ', '').split(','):
+        if not raw:
+            continue
+        try:
+            out.append(int(raw))
+        except ValueError:
+            raise HTTPException(
+                400, f"숫자만 입력 가능: {raw!r} (쉼표로 구분)"
+            )
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -260,19 +257,15 @@ def users_edit_post(
             u.name = name.strip() or u.name
             u.active = active == 'on'
             u.preferences = {
-                'A': store.Preferences(times3=_csv_ints(times3_a), times2=_csv_ints(times2_a)),
-                'B': store.Preferences(times3=_csv_ints(times3_b), times2=_csv_ints(times2_b)),
-                'C': store.Preferences(times3=_csv_ints(times3_c), times2=_csv_ints(times2_c)),
+                'A': store.Preferences(times3=parse_csv_ints(times3_a), times2=parse_csv_ints(times2_a)),
+                'B': store.Preferences(times3=parse_csv_ints(times3_b), times2=parse_csv_ints(times2_b)),
+                'C': store.Preferences(times3=parse_csv_ints(times3_c), times2=parse_csv_ints(times2_c)),
             }
             break
     else:
         raise HTTPException(404, "대원을 찾을 수 없습니다")
     store.save_users(users)
     return RedirectResponse('/users', status_code=303)
-
-
-def _csv_ints(s: str) -> list[int]:
-    return [int(x) for x in s.replace(' ', '').split(',') if x]
 
 
 # ---------------------------------------------------------------------------
@@ -897,11 +890,7 @@ def auto_plan_all(
                 continue
             store.save_schedule(d, work_group[group], is_weekend, sched)
             if iso not in book.get('recorded_dates', []):
-                away = {n for n, s in statuses.items()
-                        if s in (STATUS_ABSENT, STATUS_OUTING, STATUS_STRIKE)}
-                candidates = [u for u in active if u.name not in away]
-                sf_names = {n for n, s in statuses.items() if s == STATUS_STRIKE}
-                sf_users = [u for u in active if u.name in sf_names]
+                candidates, sf_users = domain.split_for_ledger(active, statuses)
                 ledger.update(
                     book, sched, candidates, group, iso, sf_users=sf_users,
                 )
@@ -927,10 +916,7 @@ def schedules_wipe():
     Outings, strike-force assignments, vacations, and users are NOT touched.
     Only schedules.json and ledger.json get wiped.
     """
-    import os
-    for path in (store.SCHEDULES_PATH, store.LEDGER_PATH):
-        if os.path.exists(path):
-            os.remove(path)
+    store.reset_schedules_and_ledger()
     return RedirectResponse('/schedules?wiped=1', status_code=303)
 
 
@@ -986,10 +972,7 @@ def schedules_generate_range(start: str = Form(...), end: str = Form(...)):
         store.save_schedule(cur, work_group[group], is_weekend, sched)
         # Fold into ledger only if this date hasn't been recorded before
         if iso not in book.get('recorded_dates', []):
-            away = {n for n, s in statuses.items() if s in (STATUS_ABSENT, STATUS_OUTING, STATUS_STRIKE)}
-            candidates = [u for u in active if u.name not in away]
-            sf_names = {n for n, s in statuses.items() if s == STATUS_STRIKE}
-            sf_users = [u for u in active if u.name in sf_names]
+            candidates, sf_users = domain.split_for_ledger(active, statuses)
             ledger.update(book, sched, candidates, group, iso, sf_users=sf_users)
             store.save_ledger(book)
 
@@ -1073,13 +1056,7 @@ def schedule_generate(date_str: str):
     # Update the ledger only if this date hasn't been recorded yet (avoid
     # double-counting if the user clicks Generate twice).
     if d.isoformat() not in book.get('recorded_dates', []):
-        # Vacation/outing/strike are all away from regular duty.
-        # candidates = people who actually showed up for duty today
-        # sf_users   = people on strike-force standby today (credited as work)
-        away = {n for n, s in statuses.items() if s in (STATUS_ABSENT, STATUS_OUTING, STATUS_STRIKE)}
-        candidates = [u for u in active if u.name not in away]
-        sf_names = {n for n, s in statuses.items() if s == STATUS_STRIKE}
-        sf_users = [u for u in active if u.name in sf_names]
+        candidates, sf_users = domain.split_for_ledger(active, statuses)
         ledger.update(book, schedule, candidates, group, d.isoformat(), sf_users=sf_users)
         store.save_ledger(book)
 
