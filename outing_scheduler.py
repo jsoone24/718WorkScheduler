@@ -54,54 +54,79 @@ from datetime import date, timedelta
 from typing import List, Optional, Tuple
 
 from constants import placetable
-from domain import today_group
+from domain import today_group, require_monday, is_weekend
 from store import (
-    User, Outing, active_users, vacation_user_ids_on, outing_user_ids_on,
-    strikeforce_user_ids_on, load_ledger, next_outing_id,
+    User, Outing, active_users, load_outings, load_vacations, load_strikeforce,
+    load_ledger, next_outing_id,
 )
 
 
 def _capacity_for(d: date) -> int:
     """Total person-slots demanded on date d (sum of all site capacities)."""
-    g = today_group(d)
-    weekend_idx = 1 if d.weekday() >= 5 else 0
-    cap = placetable[g][weekend_idx]
+    cap = placetable[today_group(d)][1 if is_weekend(d) else 0]
     return sum(cap[s][l] for s in range(4) for l in range(4))
 
 
-def _max_outings_for(d: date, users: List[User], extra_busy: set) -> int:
+def _index_by_day(rows, dates: list[date], get_id, *, range_starts=None, range_ends=None,
+                   single_date_attr=None) -> dict[date, set[int]]:
+    """
+    Helper: project a list of rows into {date: {user_id, ...}} for the given
+    dates only. Caller picks the projection by passing either:
+      - `single_date_attr`  — name of an ISO-string attribute compared by ==
+                              (used for outings where each row has a fixed date)
+      - `range_starts`/`range_ends` — names of two ISO-string attributes used
+                              as inclusive [start, end] ranges (vacations + SF)
+
+    Avoids re-loading the source file once per date.
+    """
+    out = {d: set() for d in dates}
+    for row in rows:
+        if single_date_attr is not None:
+            iso = getattr(row, single_date_attr)
+            for d in dates:
+                if d.isoformat() == iso:
+                    out[d].add(get_id(row))
+        else:
+            start = getattr(row, range_starts)
+            end = getattr(row, range_ends)
+            for d in dates:
+                if start <= d.isoformat() <= end:
+                    out[d].add(get_id(row))
+    return out
+
+
+def _max_outings_for(
+    d: date,
+    users: List[User],
+    extra_busy: set,
+    vac_by_day: dict,
+    strike_by_day: dict,
+    outings_by_day: dict,
+) -> int:
     """
     How many people we can send out on day d, maximally.
 
     Using the FEASIBILITY bound, not the "comfortable" bound. Under the
     loosened solver rule (0–4 slots/person), the day is feasible as long as
-        remaining people * 4 >= demand
-    i.e. remaining >= ceil(demand / 4). So:
+    `remaining * 4 >= demand`, i.e. `remaining >= ceil(demand / 4)`. So:
+
         spare = available - ceil(demand / 4)
 
-    This is INTENTIONALLY aggressive. The user's spec is "everyone should go
-    out on weekends" — so we send as many as possible, accepting that the
-    remaining duty crew will average 3–4 slots/person on busy weekend days.
-    Lighter loads are achievable on weekdays where demand is lower or when
-    fewer people request outings.
+    INTENTIONALLY aggressive — the user's spec is "everyone should go out on
+    weekends", so we send as many as possible, accepting that the remaining
+    duty crew will average 3–4 slots/person on busy weekend days.
 
-    `extra_busy` is a set of user IDs we've already decided to send out (so
-    they shouldn't be counted in the day's available pool).
+    The three `*_by_day` dicts are pre-built once per `plan_week` call (see
+    that function's top), so this helper does no file I/O.
     """
-    on_vac = vacation_user_ids_on(d)
-    on_strike = strikeforce_user_ids_on(d)
-    # Strike-force members are away from the unit for the whole week, same
-    # effect as vacation for the day's pool.
+    on_vac = vac_by_day.get(d, set())
+    on_strike = strike_by_day.get(d, set())
     available = sum(
         1 for u in users
         if u.id not in on_vac and u.id not in on_strike and u.id not in extra_busy
     )
-    demand = _capacity_for(d)
-    # ceil(demand / 4) — minimum people needed if everyone works max 4 slots
-    min_remaining = (demand + 3) // 4
-    spare = available - min_remaining
-    # Subtract any outings already saved on this day from previous runs
-    spare -= len(outing_user_ids_on(d))
+    min_remaining = (_capacity_for(d) + 3) // 4
+    spare = available - min_remaining - len(outings_by_day.get(d, set()))
     return max(0, spare)
 
 
@@ -176,9 +201,7 @@ def plan_week(
     Returns a list of OutingPlan items. Caller persists via plans_to_outings()
     + store.save_outings().
     """
-    if week_start.weekday() != 0:
-        raise ValueError(f"week_start는 월요일이어야 합니다 — 받은 값: {week_start} "
-                         f"(weekday={week_start.weekday()})")
+    require_monday(week_start)
 
     users = active_users()
     ledger = load_ledger()
@@ -189,26 +212,49 @@ def plan_week(
 
     saturday = week_start + timedelta(days=5)
     sunday = week_start + timedelta(days=6)
+    weekday_dates = [week_start + timedelta(days=offset) for offset in range(7, 12)]
+    all_dates = [saturday, sunday] + weekday_dates
 
-    sat_spare = _max_outings_for(saturday, users, set())
-    sun_spare = _max_outings_for(sunday, users, set())
+    # Hoist ALL store reads out of the per-day inner loops. Each load_*() is
+    # a JSON file read; without this, _max_outings_for did 3 reads per call,
+    # called up to 7 times — 21 file reads per plan_week. Now: 3.
+    all_vacations = load_vacations()
+    all_outings = load_outings()
+    all_strikes = load_strikeforce()
 
-    # Build candidate pool: everyone in `candidate_ids`. We do NOT pre-filter
-    # by vacation here — someone on Sat vacation can still go out on Sun or a
-    # weekday, so we check vacation per-day during assignment.
+    vac_by_day = _index_by_day(
+        all_vacations, all_dates, lambda v: v.user_id,
+        range_starts='start', range_ends='end',
+    )
+    strike_by_day = _index_by_day(
+        all_strikes, all_dates, lambda s: s.user_id,
+        range_starts='start', range_ends='end',
+    )
+    outings_by_day = _index_by_day(
+        all_outings, all_dates, lambda o: o.user_id,
+        single_date_attr='outing_date',
+    )
+
+    sat_spare = _max_outings_for(saturday, users, set(), vac_by_day, strike_by_day, outings_by_day)
+    sun_spare = _max_outings_for(sunday, users, set(), vac_by_day, strike_by_day, outings_by_day)
+
+    # Build candidate pool. We do NOT pre-filter by vacation here — someone
+    # on Sat vacation can still go out on Sun or a weekday, so the per-day
+    # check happens in `can_take` below.
     pool = [u for u in users if u.id in candidate_ids]
     pool.sort(key=lambda u: _user_priority_key(u, ledger))
 
     chosen: List[OutingPlan] = []
     assigned_ids: set = set()
-    # `remaining` is mutated in-place as we hand out outings. Keeping it as
-    # a single dict (instead of two free locals + a closure) makes the
-    # mutation site obvious from reading the loop body.
+    # `remaining` is mutated in-place as outings are handed out. Keeping it
+    # as a single dict (instead of free locals + closure) makes the mutation
+    # site obvious from reading the loop body.
     remaining = {'sat': sat_spare, 'sun': sun_spare}
 
-    sat_vac = vacation_user_ids_on(saturday) | strikeforce_user_ids_on(saturday)
-    sun_vac = vacation_user_ids_on(sunday) | strikeforce_user_ids_on(sunday)
-    vac_for = {'sat': sat_vac, 'sun': sun_vac}
+    vac_for = {
+        'sat': vac_by_day.get(saturday, set()) | strike_by_day.get(saturday, set()),
+        'sun': vac_by_day.get(sunday, set()) | strike_by_day.get(sunday, set()),
+    }
 
     def can_take(user_id: int, day_label: str) -> bool:
         """User is free for `day_label` if not on vacation/SF AND day has spare."""
@@ -216,20 +262,17 @@ def plan_week(
 
     for user in pool:
         if user.id in assigned_ids:
-            continue  # already placed (defensive)
+            continue  # defensive — already placed
 
         first, second = _preferred_day_for(
             user, ledger, remaining['sat'], remaining['sun'],
         )
-        # Try first choice, then fall back to second. Skip days where the
-        # user is on vacation/strike — assigning an outing on top of an
-        # existing absence would just stack absences.
         if can_take(user.id, first):
             target = first
         elif can_take(user.id, second):
             target = second
         else:
-            continue   # no weekend day works for them; weekday fallback below
+            continue   # no weekend day works; weekday fallback below
 
         day_date = saturday if target == 'sat' else sunday
         kind = 'weekend_sat' if target == 'sat' else 'weekend_sun'
@@ -243,26 +286,21 @@ def plan_week(
         assigned_ids.add(user.id)
         remaining[target] -= 1
 
-    # Weekday fallback: anyone STILL unassigned (couldn't fit on Sat or Sun)
-    # gets pushed to a weekday outing the following week, if any weekday has
-    # spare. We loop through the unassigned candidates in priority order and
-    # for each one, find the first next-week weekday with room.
-    #
-    # This implements the user's rule: "people who didn't go out on weekend
-    # should be assigned to weekdays" — not just an at-least-1 guarantee, but
-    # a comprehensive catch-all so nobody waits indefinitely for an outing.
-    weekday_dates = [week_start + timedelta(days=offset) for offset in range(7, 12)]
-    weekday_spare = {wd: _max_outings_for(wd, users, set()) for wd in weekday_dates}
+    # Weekday fallback: anyone still unassigned gets a next-week weekday
+    # outing if any has spare. Implements "everyone gets out eventually" —
+    # not just an at-least-1 guarantee but a comprehensive catch-all.
+    weekday_spare = {
+        wd: _max_outings_for(wd, users, set(), vac_by_day, strike_by_day, outings_by_day)
+        for wd in weekday_dates
+    }
 
     for user in pool:
         if user.id in assigned_ids:
             continue   # already got a weekend outing
-        # Try each weekday in order until we find one with spare and where the
-        # user isn't on vacation.
         for wd in weekday_dates:
-            if user.id in vacation_user_ids_on(wd):
+            if user.id in vac_by_day.get(wd, set()):
                 continue
-            if user.id in strikeforce_user_ids_on(wd):
+            if user.id in strike_by_day.get(wd, set()):
                 continue
             if weekday_spare[wd] <= 0:
                 continue
@@ -275,7 +313,7 @@ def plan_week(
             ))
             assigned_ids.add(user.id)
             weekday_spare[wd] -= 1
-            break   # this user is placed; move on to next candidate
+            break
 
     return chosen
 

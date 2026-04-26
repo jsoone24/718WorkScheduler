@@ -234,8 +234,17 @@ def save_vacations(vacations: list[Vacation]) -> None:
     _save_json(VACATIONS_PATH, [asdict(v) for v in vacations])
 
 
-def next_vacation_id() -> int:
-    return (max((v.id for v in load_vacations()), default=0)) + 1
+def next_vacation_id(rows: list[Vacation] | None = None) -> int:
+    """Next free vacation id. Pass `rows` if you've already loaded the list."""
+    items = rows if rows is not None else load_vacations()
+    return (max((v.id for v in items), default=0)) + 1
+
+
+def delete_vacations_by_ids(ids: set[int]) -> None:
+    """Drop every vacation whose id is in `ids` (no-op if `ids` is empty)."""
+    if not ids:
+        return
+    save_vacations([v for v in load_vacations() if v.id not in ids])
 
 
 def vacation_user_ids_on(d: date) -> set[int]:
@@ -260,8 +269,17 @@ def save_outings(outings: list[Outing]) -> None:
     _save_json(OUTINGS_PATH, [asdict(o) for o in outings])
 
 
-def next_outing_id() -> int:
-    return (max((o.id for o in load_outings()), default=0)) + 1
+def next_outing_id(rows: list[Outing] | None = None) -> int:
+    """Next free outing id. Pass `rows` to skip a redundant load."""
+    items = rows if rows is not None else load_outings()
+    return (max((o.id for o in items), default=0)) + 1
+
+
+def delete_outings_by_ids(ids: set[int]) -> None:
+    """Drop every outing whose id is in `ids` (no-op if `ids` is empty)."""
+    if not ids:
+        return
+    save_outings([o for o in load_outings() if o.id not in ids])
 
 
 def outing_user_ids_on(d: date) -> set[int]:
@@ -282,8 +300,17 @@ def save_strikeforce(items: list[StrikeForce]) -> None:
     _save_json(STRIKEFORCE_PATH, [asdict(s) for s in items])
 
 
-def next_strikeforce_id() -> int:
-    return (max((s.id for s in load_strikeforce()), default=0)) + 1
+def next_strikeforce_id(rows: list[StrikeForce] | None = None) -> int:
+    """Next free strike-force id. Pass `rows` to skip a redundant load."""
+    items = rows if rows is not None else load_strikeforce()
+    return (max((s.id for s in items), default=0)) + 1
+
+
+def delete_strikeforce_by_ids(ids: set[int]) -> None:
+    """Drop every strike-force entry whose id is in `ids`."""
+    if not ids:
+        return
+    save_strikeforce([s for s in load_strikeforce() if s.id not in ids])
 
 
 def strikeforce_user_ids_on(d: date) -> set[int]:
@@ -326,9 +353,14 @@ def reset_schedules_and_ledger() -> None:
     Used by the web UI's "전체 초기화" button when the user wants to
     regenerate every saved schedule from scratch (e.g. after a rule change).
     """
+    # `try / except FileNotFoundError` is the idiomatic non-TOCTOU way to do
+    # "delete if it exists" — equivalent number of lines, one fewer syscall,
+    # no race window between the check and the unlink.
     for path in (SCHEDULES_PATH, LEDGER_PATH):
-        if os.path.exists(path):
+        try:
             os.remove(path)
+        except FileNotFoundError:
+            pass
 
 
 # ---------------------------------------------------------------------------

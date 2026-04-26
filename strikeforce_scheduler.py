@@ -24,6 +24,7 @@ Size and duration come from data/settings.json (load via store.load_settings):
 from datetime import date, timedelta
 from typing import List, Optional
 
+from domain import require_monday
 from store import (
     User, StrikeForce, active_users, vacation_user_ids_on,
     load_strikeforce, load_settings, next_strikeforce_id,
@@ -50,8 +51,7 @@ def plan_week(week_start: date) -> List[StrikeForce]:
     Skips users who already have a strike-force assignment overlapping this
     week, and users on vacation for any day of the week.
     """
-    if week_start.weekday() != 0:
-        raise ValueError(f"week_start는 월요일이어야 합니다 — 받은 값: {week_start}")
+    require_monday(week_start)
 
     settings = load_settings()
     size = int(settings['strike_force_size'])
@@ -88,7 +88,8 @@ def plan_week(week_start: date) -> List[StrikeForce]:
 
     chosen = pool[:size]
 
-    next_id = next_strikeforce_id()
+    # Reuse the already-loaded `all_strikes` list — saves a second JSON read.
+    next_id = next_strikeforce_id(rows=all_strikes)
     return [
         StrikeForce(
             id=next_id + i,
