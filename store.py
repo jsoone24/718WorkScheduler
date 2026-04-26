@@ -130,19 +130,41 @@ def _ensure_data_dir() -> None:
 
 
 def _load_json(path: str, default):
-    """Read a JSON file, or return `default` if it doesn't exist."""
+    """
+    Read a JSON file, or return `default` if it doesn't exist.
+
+    Wraps `json.JSONDecodeError` in a `RuntimeError` with a Korean message
+    pointing the user at the offending file, so a corrupted data file
+    surfaces clearly in the FastAPI 500 page instead of as a confusing
+    parser traceback.
+    """
     if not os.path.exists(path):
         return default
-    with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f"손상된 데이터 파일: {path} ({e}). "
+            f"파일을 직접 수정하지 마시고, 백업이 있으면 복원하세요."
+        ) from e
 
 
 def _save_json(path: str, payload) -> None:
-    """Write JSON atomically (tmp + rename) so a crash can't corrupt the file."""
+    """
+    Write JSON atomically: write to `path.tmp`, fsync, then `os.replace`.
+
+    `os.replace` is atomic with respect to readers, but doesn't guarantee
+    the new file's bytes have hit the disk before the rename. The explicit
+    flush + fsync makes the file durable against a kernel/power crash that
+    happens between `os.replace` returning and the data physically landing.
+    """
     _ensure_data_dir()
     tmp = path + '.tmp'
     with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, indent=2, sort_keys=False)
+        f.flush()
+        os.fsync(f.fileno())
     os.replace(tmp, path)
 
 
@@ -290,6 +312,23 @@ def load_settings() -> dict:
 
 def save_settings(settings: dict) -> None:
     _save_json(SETTINGS_PATH, settings)
+
+
+# ---------------------------------------------------------------------------
+# Maintenance helpers
+# ---------------------------------------------------------------------------
+
+def reset_schedules_and_ledger() -> None:
+    """
+    Delete `schedules.json` and `ledger.json` (the two derived stores).
+
+    Roster, vacations, outings, strike-force, and settings are NOT touched.
+    Used by the web UI's "전체 초기화" button when the user wants to
+    regenerate every saved schedule from scratch (e.g. after a rule change).
+    """
+    for path in (SCHEDULES_PATH, LEDGER_PATH):
+        if os.path.exists(path):
+            os.remove(path)
 
 
 # ---------------------------------------------------------------------------
