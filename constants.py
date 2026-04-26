@@ -11,19 +11,11 @@ NAMING CONVENTIONS
 * `TimeA / TimeB / TimeC`  — clock-hour LABELS (12-hour clock without AM/PM)
                              for each group's four 2-hour duty slots. See
                              the 24-hour translation table in solver.SLOT_24H.
-* `WorkA / WorkB / WorkC` (and `_weekend`)
-                           — per-slot total person count. Equal to the row
-                             sums of the corresponding `place*` matrix; kept
-                             only for backward compatibility with code that
-                             reads them directly. The CP-SAT solver uses
-                             `placetable` exclusively.
 * `placeA / placeB / placeC` (and `_weekend`)
                            — 4×4 capacity matrices: `place[slot][site]`.
                              Site order is fixed: [정출, 별정, 별후, 서남문].
-* `Timetable`              — 3-tuple-of-tuples indexed by group: each entry
-                             is `[TimeX, WorkX_weekday, WorkX_weekend]`.
-* `placetable`             — 3-tuple indexed by group: each entry is
-                             `[placeX_weekday, placeX_weekend]`.
+* `Timetable`              — group-index → list of 4 hour labels.
+* `placetable`             — group-index → [weekday matrix, weekend matrix].
 * `work_group`             — group-index → letter mapping ('A' / 'B' / 'C').
 """
 
@@ -33,24 +25,14 @@ NAMING CONVENTIONS
 work_group = {0: 'A', 1: 'B', 2: 'C'}
 
 # ---------------------------------------------------------------------------
-# Time slots and per-slot totals (per group, weekday vs weekend)
+# Time slots per group
 # ---------------------------------------------------------------------------
 
 TimeA = [6, 4, 8, 12]
-WorkA = [7, 11, 8, 6]
-WorkA_weekend = [6, 8, 8, 6]
-
 TimeB = [8, 12, 2, 4]
-WorkB = [11, 11, 6, 6]
-WorkB_weekend = [8, 8, 6, 6]
-
 TimeC = [10, 2, 6, 22]
-WorkC = [11, 11, 11, 6]
-WorkC_weekend = [8, 8, 8, 6]
 
-Timetable = [[TimeA, WorkA, WorkA_weekend],
-             [TimeB, WorkB, WorkB_weekend],
-             [TimeC, WorkC, WorkC_weekend]]
+Timetable = [TimeA, TimeB, TimeC]
 
 # ---------------------------------------------------------------------------
 # Per-slot, per-site capacities (site order: 정출, 별정, 별후, 서남문)

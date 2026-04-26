@@ -73,7 +73,7 @@ def test_solver_excludes_longnight_from_night_slots_in_group_b(isolated_store):
     assert sched is not None
     # Group B's night slots are clock hours 02 and 04. Confirm no assignment
     # for the long-night user lands in those slot indices.
-    times = Timetable[1][0]
+    times = Timetable[1]
     night_idxs = {i for i, t in enumerate(times) if t in (2, 4)}
     for slot_idx, _site in sched[name]:
         assert slot_idx not in night_idxs

@@ -1,49 +1,15 @@
 """
 ledger.py — fairness business logic on top of store.load_ledger / save_ledger.
 
-WHY THIS EXISTS
----------------
-The solver runs ONE day at a time. "Fairness" only shows up across many days
-("Alice and Bob worked the same total hours this month"). This module:
+The solver runs one day at a time, but fairness is a multi-day property
+("Alice and Bob worked roughly the same total hours this month"). This
+module folds a day's schedule into cumulative counters, exposes a
+vacation-normalised fairness signal the solver can balance, and prints a
+human-readable summary.
 
-  - folds a day's schedule into the cumulative counters
-  - exposes a fairness-aware work-count signal that the solver can use to
-    bias today's choice toward people who are behind
-  - prints a human-readable summary
-
-PERSISTENCE LIVES IN store.py
------------------------------
-This file is pure logic. `store.load_ledger()` and `store.save_ledger()` do
-the file I/O.
-
-VACATION-NORMALISED FAIRNESS
-----------------------------
-The earlier ledger.py used raw cumulative counts. That was unfair to people
-who took vacation: their `work_count` would lag, then they'd get hammered with
-3-duty days the moment they came back to "catch up". We now also track
-`available_days` per person — days where they were eligible to work — and the
-solver uses a virtual count that scales work by the platoon mean rate. See
-`work_count_for_solver()` below for the exact formula.
-
-STRIKE-FORCE CREDIT
--------------------
-Strike-force (타격대) members are on standby for the whole week, so they don't
-appear on regular schedules. Without intervention their `work_count` would
-stagnate, the fairness term would mark them as "behind" when they come off
-duty, and they'd get hammered with extra slots — punishment for serving as SF.
-
-Fix: every day we update the ledger, we ALSO credit each SF member with the
-day's average slots-per-worker. To the fairness term, an SF day looks the same
-as a normal duty day. People who serve SF stay roughly in line with peers.
-
-The credit is stored in a SEPARATE field (`sf_credit_slots`) — NOT in
-`work_count`. This way:
-  - `work_count` stays a clean record of real, actual slots worked.
-  - The preference-match RATE (matches / work_count) is computed on real work
-    only, so SF time doesn't drag the rate down (you can't match preferences
-    on a day you didn't actually work).
-  - The fairness signal still uses BOTH (combined for the virtual count), so
-    SF members aren't punished as "behind".
+Persistence is delegated to `store.load_ledger()` / `store.save_ledger()`.
+See docs/DOMAIN.md (fairness section) for the formula derivation and the
+strike-force credit explanation.
 """
 
 from typing import Dict, List, Tuple
@@ -126,7 +92,7 @@ def update(
     The 'sf_credit_days' counter (per-user) is incremented separately so the
     UI can show how many SF days have been credited.
     """
-    times = Timetable[today_group][0]
+    times = Timetable[today_group]
     group_letter = work_group[today_group]
 
     # First pass: real workers. Their actual slots set the day's "average"
