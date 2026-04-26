@@ -40,7 +40,7 @@ DESIGN NOTES
 import datetime
 from typing import Optional
 
-from fastapi import FastAPI, Form, Request, HTTPException, status
+from fastapi import FastAPI, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -50,17 +50,8 @@ import ledger
 import store
 import outing_scheduler
 import strikeforce_scheduler
-from constants import work_group, Timetable, placetable
-from solver import (
-    solve_day,
-    feasibility_report,
-    SLOT_24H,
-    SITE_NAMES,
-    STATUS_ABSENT,
-    STATUS_OUTING,
-    STATUS_LONGNIGHT,
-    STATUS_STRIKE,
-)
+from constants import work_group, Timetable
+from solver import feasibility_report, SLOT_24H, SITE_NAMES
 
 
 app = FastAPI(title="718 Duty Scheduler")
@@ -88,6 +79,16 @@ def parse_date(s: str) -> datetime.date:
         return datetime.date.fromisoformat(s)
     except (ValueError, TypeError):
         raise HTTPException(status_code=400, detail=f"날짜 형식 오류: {s!r}")
+
+
+def parse_monday(s: str) -> datetime.date:
+    """Parse + assert Monday. Routes that take a `week_start` form field use this."""
+    d = parse_date(s)
+    try:
+        domain.require_monday(d)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return d
 
 
 def parse_csv_ints(s: str) -> list[int]:
@@ -123,8 +124,8 @@ def dashboard(
     auto_fail: Optional[int] = None,
 ):
     today = datetime.date.today()
-    group = compute_today_group(today)
-    is_weekend = today.weekday() >= 5
+    group = domain.today_group(today)
+    is_weekend = domain.is_weekend(today)
     active = store.active_users()
     book = store.load_ledger()
     today_sched = store.schedule_on(today)
@@ -137,19 +138,13 @@ def dashboard(
     place_cap = None
     statuses = None
     if today_sched:
-        times = Timetable[group][0]
-        weekend_idx = 1 if is_weekend else 0
-        place_cap = placetable[group][weekend_idx]
+        times = Timetable[group]
+        place_cap = domain.place_for(group, is_weekend)
         statuses = build_statuses(today, active, longnight_names=set())
-        assignments = today_sched['assignments']
-        by_slot_site = {(s, l): [] for s in range(4) for l in range(4)}
-        for name, slots in assignments.items():
-            for s, l in slots:
-                by_slot_site[(s, l)].append(name)
-        per_person = sorted(assignments.items(), key=lambda kv: -len(kv[1]))
+        by_slot_site, per_person = domain.invert_schedule(today_sched['assignments'])
 
     # Default start for the combined auto-plan form: this week's Monday.
-    this_monday = today - datetime.timedelta(days=today.weekday())
+    this_monday = domain.monday_of(today)
 
     auto_summary = None
     if any(v is not None for v in (auto_sf, auto_out, auto_sched, auto_skip, auto_fail)):
@@ -481,11 +476,7 @@ def vacations_delete(vac_id: int):
 @app.post('/vacations/bulk-delete')
 def vacations_bulk_delete(ids: list[int] = Form(default=[])):
     """Delete every vacation whose id is in `ids` (from checkboxes)."""
-    if not ids:
-        return RedirectResponse('/vacations', status_code=303)
-    drop = set(ids)
-    rows = [v for v in store.load_vacations() if v.id not in drop]
-    store.save_vacations(rows)
+    store.delete_vacations_by_ids(set(ids))
     return RedirectResponse('/vacations', status_code=303)
 
 
@@ -547,9 +538,7 @@ def outings_plan(
     treated as "already done" and we shift to the next free week. Re-running
     the same form won't create duplicates.
     """
-    monday = parse_date(week_start)
-    if monday.weekday() != 0:
-        raise HTTPException(400, "week_start는 월요일이어야 합니다")
+    monday = parse_monday(week_start)
     if num_weeks < 1 or num_weeks > 12:
         raise HTTPException(400, "주 수는 1~12 사이여야 합니다")
 
@@ -599,11 +588,7 @@ def outings_delete(outing_id: int):
 @app.post('/outings/bulk-delete')
 def outings_bulk_delete(ids: list[int] = Form(default=[])):
     """Delete every outing whose id is in `ids` (from checkboxes)."""
-    if not ids:
-        return RedirectResponse('/outings', status_code=303)
-    drop = set(ids)
-    rows = [o for o in store.load_outings() if o.id not in drop]
-    store.save_outings(rows)
+    store.delete_outings_by_ids(set(ids))
     return RedirectResponse('/outings', status_code=303)
 
 
@@ -659,9 +644,7 @@ def strikeforce_plan(
     Re-running the same form won't create duplicates — each click only adds
     `num_weeks` genuinely new assignments.
     """
-    monday = parse_date(week_start)
-    if monday.weekday() != 0:
-        raise HTTPException(400, "week_start는 월요일이어야 합니다")
+    monday = parse_monday(week_start)
     if num_weeks < 1 or num_weeks > 12:
         raise HTTPException(400, "주 수는 1~12 사이여야 합니다")
 
@@ -720,11 +703,7 @@ def strikeforce_delete(sf_id: int):
 @app.post('/strikeforce/bulk-delete')
 def strikeforce_bulk_delete(ids: list[int] = Form(default=[])):
     """Delete every strike-force assignment whose id is in `ids`."""
-    if not ids:
-        return RedirectResponse('/strikeforce', status_code=303)
-    drop = set(ids)
-    rows = [s for s in store.load_strikeforce() if s.id not in drop]
-    store.save_strikeforce(rows)
+    store.delete_strikeforce_by_ids(set(ids))
     return RedirectResponse('/strikeforce', status_code=303)
 
 
@@ -816,14 +795,14 @@ def auto_plan_all(
 
     Redirects to dashboard with a summary banner.
     """
-    monday = parse_date(start_week)
-    if monday.weekday() != 0:
-        raise HTTPException(400, "월요일이어야 합니다")
+    monday = parse_monday(start_week)
     if num_weeks < 1 or num_weeks > 12:
         raise HTTPException(400, "주 수는 1~12 사이여야 합니다")
 
-    settings = store.load_settings()
-    sf_size = int(settings['strike_force_size'])
+    sf_size = int(store.load_settings()['strike_force_size'])
+    active = store.active_users()
+    existing_schedules = store.load_schedules()
+    book = store.load_ledger()
 
     sf_added = 0
     outing_added = 0
@@ -834,11 +813,9 @@ def auto_plan_all(
     for i in range(num_weeks):
         wk = monday + datetime.timedelta(weeks=i)
 
-        # Step 1: SF for this week, only if not already filled
-        existing_sf_for_wk = sum(
-            1 for s in store.load_strikeforce() if s.start == wk.isoformat()
-        )
-        if existing_sf_for_wk < sf_size:
+        # Step 1 — SF for this week, only if not already filled
+        existing_sf = [s for s in store.load_strikeforce() if s.start == wk.isoformat()]
+        if len(existing_sf) < sf_size:
             new_sf = strikeforce_scheduler.plan_week(wk)
             if new_sf:
                 rows = store.load_strikeforce()
@@ -846,14 +823,10 @@ def auto_plan_all(
                 store.save_strikeforce(rows)
                 sf_added += len(new_sf)
 
-        # Step 2: outings for this week, only if Sat/Sun has none yet
+        # Step 2 — outings for this week, only if Sat/Sun has none yet
         sat = wk + datetime.timedelta(days=5)
         sun = wk + datetime.timedelta(days=6)
-        already_outings = (
-            len(store.outing_user_ids_on(sat)) > 0
-            or len(store.outing_user_ids_on(sun)) > 0
-        )
-        if not already_outings:
+        if not (store.outing_user_ids_on(sat) or store.outing_user_ids_on(sun)):
             plans = outing_scheduler.plan_week(wk)
             new_outings = outing_scheduler.plans_to_outings(plans)
             if new_outings:
@@ -861,7 +834,6 @@ def auto_plan_all(
                 rows.extend(new_outings)
                 store.save_outings(rows)
                 outing_added += len(new_outings)
-                book = store.load_ledger()
                 for plan in plans:
                     book['last_outing'][plan.user_name] = {
                         'date': plan.outing_date.isoformat(),
@@ -869,33 +841,22 @@ def auto_plan_all(
                     }
                 store.save_ledger(book)
 
-        # Step 3: schedules for each day (Mon..Sun) of this week
-        active = store.active_users()
+        # Step 3 — schedules for each day (Mon..Sun) of this week
         for d_offset in range(7):
             d = wk + datetime.timedelta(days=d_offset)
             iso = d.isoformat()
-            if store.schedule_on(d) is not None:
+            if iso in existing_schedules:
                 sched_skipped += 1
                 continue
-            group = compute_today_group(d)
-            is_weekend = d.weekday() >= 5
-            statuses = build_statuses(d, active, longnight_names=set())
-            book = store.load_ledger()
-            sched = solve_day(
-                group, is_weekend, active, statuses,
-                work_count_before=ledger.work_count_for_solver(book, active),
-            )
+            sched = domain.generate_and_persist(d, active, book=book)
             if sched is None:
                 sched_failed.append(iso)
                 continue
-            store.save_schedule(d, work_group[group], is_weekend, sched)
-            if iso not in book.get('recorded_dates', []):
-                candidates, sf_users = domain.split_for_ledger(active, statuses)
-                ledger.update(
-                    book, sched, candidates, group, iso, sf_users=sf_users,
-                )
-                store.save_ledger(book)
+            existing_schedules[iso] = True   # keep our local set in sync
             sched_added += 1
+    # generate_and_persist mutated `book` in place; persist once at the end
+    # to amortise the file write across the whole bulk operation.
+    store.save_ledger(book)
 
     return RedirectResponse(
         f'/?auto_sf={sf_added}&auto_out={outing_added}'
@@ -946,44 +907,27 @@ def schedules_generate_range(start: str = Form(...), end: str = Form(...)):
     skipped_existing: list[str] = []
     failed: list[tuple[str, str]] = []  # (date, reason)
 
-    # Iterate in chronological order so the fairness ledger advances day-by-day
+    # Iterate chronologically so the fairness ledger advances day-by-day
     # exactly as it would on a real day-after-day rollout.
     cur = start_d
     while cur <= end_d:
         iso = cur.isoformat()
         if iso in existing:
             skipped_existing.append(iso)
-            cur += datetime.timedelta(days=1)
-            continue
-
-        group = compute_today_group(cur)
-        is_weekend = cur.weekday() >= 5
-        statuses = build_statuses(cur, active, longnight_names=set())
-
-        sched = solve_day(
-            group, is_weekend, active, statuses,
-            work_count_before=ledger.work_count_for_solver(book, active),
-        )
-        if sched is None:
-            failed.append((iso, '실현 불가능 — 인원/제약 확인 필요'))
-            cur += datetime.timedelta(days=1)
-            continue
-
-        store.save_schedule(cur, work_group[group], is_weekend, sched)
-        # Fold into ledger only if this date hasn't been recorded before
-        if iso not in book.get('recorded_dates', []):
-            candidates, sf_users = domain.split_for_ledger(active, statuses)
-            ledger.update(book, sched, candidates, group, iso, sf_users=sf_users)
-            store.save_ledger(book)
-
-        succeeded.append(iso)
+        else:
+            sched = domain.generate_and_persist(cur, active, book=book)
+            if sched is None:
+                failed.append((iso, '실현 불가능 — 인원/제약 확인 필요'))
+            else:
+                succeeded.append(iso)
         cur += datetime.timedelta(days=1)
 
-    # Pack a brief summary into the redirect URL so the list page can show it
-    summary_parts = [f"ok={len(succeeded)}",
-                     f"skip={len(skipped_existing)}",
-                     f"fail={len(failed)}"]
-    return RedirectResponse(f'/schedules?{"&".join(summary_parts)}', status_code=303)
+    # Save the ledger once at the end (generate_and_persist mutated it in place
+    # for each day, but skipped its own save when a `book` was supplied).
+    store.save_ledger(book)
+
+    summary = f"ok={len(succeeded)}&skip={len(skipped_existing)}&fail={len(failed)}"
+    return RedirectResponse(f'/schedules?{summary}', status_code=303)
 
 
 @app.get('/schedule', response_class=HTMLResponse)
@@ -994,28 +938,18 @@ def schedule_today(request: Request):
 @app.get('/schedule/{date_str}', response_class=HTMLResponse)
 def schedule_view(request: Request, date_str: str):
     d = parse_date(date_str)
-    group = compute_today_group(d)
-    is_weekend = d.weekday() >= 5
+    group = domain.today_group(d)
+    is_weekend = domain.is_weekend(d)
 
     saved = store.schedule_on(d)
     active = store.active_users()
     statuses = build_statuses(d, active, longnight_names=set())
     issues = feasibility_report(group, is_weekend, active, statuses)
 
-    times = Timetable[group][0]
-    weekend_idx = 1 if is_weekend else 0
-    place_cap = placetable[group][weekend_idx]
-
     by_slot_site = None
     per_person = None
     if saved:
-        # Invert the saved assignments for display
-        assignments = saved['assignments']
-        by_slot_site = {(s, l): [] for s in range(4) for l in range(4)}
-        for name, slots in assignments.items():
-            for s, l in slots:
-                by_slot_site[(s, l)].append(name)
-        per_person = sorted(assignments.items(), key=lambda kv: -len(kv[1]))
+        by_slot_site, per_person = domain.invert_schedule(saved['assignments'])
 
     return templates.TemplateResponse(request, 'schedule.html', {
         'date': d,
@@ -1025,9 +959,9 @@ def schedule_view(request: Request, date_str: str):
         'active': active,
         'statuses': statuses,
         'issues': issues,
-        'times': times,
+        'times': Timetable[group],
         'slot_24h': SLOT_24H[group],
-        'place_cap': place_cap,
+        'place_cap': domain.place_for(group, is_weekend),
         'site_names': SITE_NAMES,
         'by_slot_site': by_slot_site,
         'per_person': per_person,
@@ -1037,29 +971,10 @@ def schedule_view(request: Request, date_str: str):
 @app.post('/schedule/{date_str}/generate')
 def schedule_generate(date_str: str):
     d = parse_date(date_str)
-    group = compute_today_group(d)
-    is_weekend = d.weekday() >= 5
     active = store.active_users()
-    statuses = build_statuses(d, active, longnight_names=set())
-    book = store.load_ledger()
-
-    schedule = solve_day(
-        group, is_weekend, active, statuses,
-        work_count_before=ledger.work_count_for_solver(book, active),
-    )
-    if schedule is None:
-        # Re-render the page with an error (use the existing route)
+    sched = domain.generate_and_persist(d, active)
+    if sched is None:
         raise HTTPException(409, "현재 명단으로 만들 수 있는 근무표가 없습니다. 휴가/외출 인원을 조정하세요.")
-
-    store.save_schedule(d, work_group[group], is_weekend, schedule)
-
-    # Update the ledger only if this date hasn't been recorded yet (avoid
-    # double-counting if the user clicks Generate twice).
-    if d.isoformat() not in book.get('recorded_dates', []):
-        candidates, sf_users = domain.split_for_ledger(active, statuses)
-        ledger.update(book, schedule, candidates, group, d.isoformat(), sf_users=sf_users)
-        store.save_ledger(book)
-
     return RedirectResponse(f'/schedule/{d.isoformat()}', status_code=303)
 
 

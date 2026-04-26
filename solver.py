@@ -1,50 +1,15 @@
 """
 solver.py — CP-SAT scheduler for 718 auxiliary police daily duty allocation.
 
-WHAT THIS FILE DOES
--------------------
-Given a roster of who is working today (and who is absent / out / on long-night),
-this module produces a duty schedule that:
+`solve_day(...)` returns a name-to-(slot, site) assignment that:
+  1. Respects all hard rules (per-site capacity, no double-booking, status
+     overrides, per-day balance among normal workers).
+  2. Maximises preference matches and minimises cumulative work-count spread
+     across the platoon (the soft objective).
 
-  1. Respects every hard rule (capacity per site, status overrides, no double-booking)
-  2. Maximises the number of people who get one of their preferred shift hours
-
-It does this with Google's OR-Tools CP-SAT solver, which solves this kind of
-small constraint problem in milliseconds. This replaces the old random-greedy
-approach in Time_Scheduler.py + Work_Scheduler.py, which could hang forever on
-hard inputs because random shuffling has no notion of "give up cleanly".
-
-DOMAIN RECAP (see constants.py for the data)
---------------------------------------------
-- 21 officers in p2 (the second platoon), each with `fav` preferences
-- 3 rotation groups A / B / C, cycling once per day
-- Each group has 4 time slots (each a 2-hour block)
-- 4 duty sites: 정출, 별정, 별후, 서남문
-- Per-slot, per-site capacity tables in `placetable` (different on weekends)
-
-STATUS TYPES
-------------
-Each person on a given day is in exactly one of these states:
-  - normal     : works 1 to 4 slots. Crucially, ALL normals on the same day
-                 are kept within 1 slot of each other (max - min ≤ 1) — so
-                 you never see one person at 4 while another is at 1. Min is
-                 1, not 0: nobody just "rests" while still being on duty.
-                 If a person should rest, mark them as outing/strike/absent.
-  - absent     : 사고자 — works 0 slots (vacation, sick, training, etc.)
-  - outing     : 외출자 — works 0 slots (away from the unit for the day).
-                 Functionally identical to `absent` for the solver; the label
-                 exists so the outing scheduler can track Sat/Sun rotation
-                 fairness separately from medical/training absences.
-  - longnight  : 긴밤자 — exempt from the 02:00 and 04:00 slots so they can
-                 sleep through the night. Only meaningful in Group B (the only
-                 group that has those night slots). Bounded at 1–2 slots.
-                 NOT subject to the "within 1 slot" balance rule — they're
-                 fundamentally capped lower than normals.
-  - strike     : 타격대 — quick-reaction standby for the week, no regular duty
-                 assignments. Treated like absent by the solver; tracked in
-                 the strike-force ledger for rotation fairness.
-
-Anyone not mentioned in the status dict is treated as normal.
+See docs/SOLVER.md for the full constraint listing and decision rationale,
+and docs/DOMAIN.md for the status types (normal / absent / outing / strike /
+longnight) and how they interact with the solver.
 """
 
 from typing import Dict, List, Optional, Tuple
@@ -127,9 +92,9 @@ def solve_day(
     """
     # ----- Step 1: pull today's domain data out of the tables in constants.py -----
 
-    # Timetable[group] = [TimeX, WorkX_weekday, WorkX_weekend]. We only need TimeX
-    # here (per-slot people totals are implicit in placetable's row sums).
-    times = Timetable[today_group][0]  # e.g. [6, 4, 8, 12] for Group A
+    # Hour-label list for this group (e.g. [6, 4, 8, 12] for Group A — see
+    # docs/DOMAIN.md for the 12-hour-clock encoding).
+    times = Timetable[today_group]
 
     # placetable[group] is [weekday_matrix, weekend_matrix].
     # Each matrix is 4 slots x 4 sites of integer capacities.
@@ -427,7 +392,7 @@ def print_schedule(
     is_weekend: bool,
 ) -> None:
     """Pretty-print the schedule grouped by slot, then by site."""
-    times = Timetable[today_group][0]
+    times = Timetable[today_group]
     weekend_idx = 1 if is_weekend else 0
     place_cap = placetable[today_group][weekend_idx]
     group_letter = work_group[today_group]
