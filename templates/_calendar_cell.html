@@ -1,0 +1,20 @@
+{# Single calendar cell — used both inside the grid AND returned as an HTMX
+   swap target after a click. The outer <button> holds the form action and
+   the visible label. status values:
+     ''               — empty (clickable to add vacation)
+     'vacation'       — on vacation (green-ish)
+     'weekend_sat'    — Sat outing (blue)
+     'weekend_sun'    — Sun outing (blue)
+     'weekday'        — weekday outing (purple)
+   Cycle on click: none → vacation → outing → none.
+#}
+{% set label_map = {'': '·', 'vacation': '휴', 'weekend_sat': '외', 'weekend_sun': '외', 'weekday': '외', 'strike': '타'} %}
+{% set class_map = {'': 'cell-empty', 'vacation': 'cell-vacation', 'weekend_sat': 'cell-outing', 'weekend_sun': 'cell-outing', 'weekday': 'cell-outing-wd', 'strike': 'cell-strike'} %}
+<button type="button"
+        class="cell-btn {{ class_map[status] }}"
+        hx-post="/calendar/cell"
+        hx-vals='{"user_id": {{ user_id }}, "date_str": "{{ date }}"}'
+        hx-swap="outerHTML"
+        title="{{ status or '비어있음' }} — 클릭해서 변경">
+    {{ label_map[status] }}
+</button>

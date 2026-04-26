@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}달력 (휴가/외출){% endblock %}
+{% block content %}
+<h1>달력 — 휴가 / 외출</h1>
+
+<div class="card">
+    <p class="muted">
+        각 셀 클릭 시 <strong>비어있음 → 휴(휴가) → 외(외출) → 비어있음</strong> 순서로 순환합니다.
+        외출은 날짜에 따라 자동으로 토요일/일요일/평일로 분류됩니다.
+        Range: <strong>{{ start_date }}</strong> ~ <strong>{{ date_list[-1] }}</strong>
+    </p>
+    <div class="inline" style="flex-wrap:wrap; gap:0.4rem;">
+        <a href="/calendar?start={{ prev_start }}&days={{ date_list|length }}" class="btn secondary">← 이전 {{ date_list|length }}일</a>
+        <a href="/calendar?days={{ date_list|length }}" class="btn secondary">오늘부터</a>
+        <a href="/calendar?start={{ next_start }}&days={{ date_list|length }}" class="btn secondary">다음 {{ date_list|length }}일 →</a>
+    </div>
+    <p class="muted" style="margin-top: 0.8rem;">기간 선택:</p>
+    <div class="inline" style="flex-wrap:wrap; gap:0.4rem;">
+        <a href="/calendar?days=1" class="btn small {% if date_list|length == 1 %}{% else %}secondary{% endif %}">1일</a>
+        <a href="/calendar?days=3" class="btn small {% if date_list|length == 3 %}{% else %}secondary{% endif %}">3일</a>
+        <a href="/calendar?days=7" class="btn small {% if date_list|length == 7 %}{% else %}secondary{% endif %}">1주</a>
+        <a href="/calendar?days=14" class="btn small {% if date_list|length == 14 %}{% else %}secondary{% endif %}">2주</a>
+        <a href="/calendar?days=21" class="btn small {% if date_list|length == 21 %}{% else %}secondary{% endif %}">3주</a>
+        <a href="/calendar?days=28" class="btn small {% if date_list|length == 28 %}{% else %}secondary{% endif %}">4주</a>
+        <a href="/calendar?days=60" class="btn small {% if date_list|length == 60 %}{% else %}secondary{% endif %}">2개월</a>
+    </div>
+</div>
+
+<div class="card calendar-wrapper">
+    <table class="calendar">
+        <thead>
+            <tr>
+                <th class="namecol">대원</th>
+                {% for d in date_list %}
+                {% set wd = d.weekday() %}
+                <th class="{% if wd == 5 %}sat{% elif wd == 6 %}sun{% endif %}">
+                    <div class="md">{{ d.strftime('%m/%d') }}</div>
+                    <div class="dow">
+                        {% if wd == 0 %}월{% elif wd == 1 %}화{% elif wd == 2 %}수{% elif wd == 3 %}목{% elif wd == 4 %}금{% elif wd == 5 %}토{% else %}일{% endif %}
+                    </div>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <th class="namecol">{{ row.user.name }}</th>
+                {% for cell in row.cells %}
+                <td>
+                    {% with user_id=row.user.id, date=cell.date, status=cell.status %}
+                        {% include '_calendar_cell.html' %}
+                    {% endwith %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3>범례</h3>
+    <p>
+        <span class="cell-btn cell-empty" style="cursor:default">·</span> 비어있음 (근무 가능)
+        &nbsp;&nbsp;
+        <span class="cell-btn cell-vacation" style="cursor:default">휴</span> 휴가/사고
+        &nbsp;&nbsp;
+        <span class="cell-btn cell-outing" style="cursor:default">외</span> 주말 외출
+        &nbsp;&nbsp;
+        <span class="cell-btn cell-outing-wd" style="cursor:default">외</span> 평일 외출
+        &nbsp;&nbsp;
+        <span class="cell-btn cell-strike" style="cursor:default">타</span> 타격대
+    </p>
+    <p class="muted" style="font-size:0.85rem;">
+        타격대 셀은 클릭으로 변경 안 됩니다 — 타격대 페이지에서 관리하세요.
+    </p>
+</div>
+{% endblock %}

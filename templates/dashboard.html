@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}대시보드 — 718 Scheduler{% endblock %}
+{% block content %}
+<h1>오늘 ({{ today }})</h1>
+
+{% if auto_summary %}
+<div class="card" style="background:#f0fdf4; border-left:4px solid #16a34a;">
+    <strong>전체 자동 배정 결과</strong> —
+    타격대 신규 {{ auto_summary.sf }}건 ·
+    외출 신규 {{ auto_summary.outings }}건 ·
+    근무표 신규 {{ auto_summary.sched_added }}일 (이미 있어서 건너뜀: {{ auto_summary.sched_skipped }}일{% if auto_summary.sched_failed > 0 %}, 실패: {{ auto_summary.sched_failed }}일{% endif %})
+</div>
+{% endif %}
+
+<div class="card" style="background:#eff6ff; border-left:4px solid #2563eb;">
+    <h2 style="margin-top:0;">전체 자동 배정 (한 번에)</h2>
+    <p class="muted">
+        타격대 → 외출 → 근무표 순서로 한 번에 자동 배정합니다.
+        이미 있는 데이터(같은 주 타격대/외출, 이미 생성된 근무표)는 건너뛰고 신규만 추가합니다.
+    </p>
+    <form action="/auto-plan-all" method="post" class="inline">
+        <div>
+            <label for="apa_start">시작 주 (월요일)</label>
+            <input type="date" id="apa_start" name="start_week" value="{{ this_monday }}" required>
+        </div>
+        <div>
+            <label for="apa_weeks">기간</label>
+            <select id="apa_weeks" name="num_weeks">
+                <option value="1">1주</option>
+                <option value="2" selected>2주</option>
+                <option value="4">4주</option>
+                <option value="8">8주</option>
+                <option value="12">12주</option>
+            </select>
+        </div>
+        <button type="submit">전부 자동 배정 실행</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>{{ group_letter }}조 {% if is_weekend %}주말{% else %}평일{% endif %}</h2>
+    <p>활동 대원: <strong>{{ active_count }}</strong> / 전체 {{ all_count }}명</p>
+    {% if not has_today_schedule %}
+        <p>오늘 근무표가 아직 생성되지 않았습니다.</p>
+        <a href="/schedule/{{ today }}" class="btn">근무표 생성하기</a>
+    {% endif %}
+</div>
+
+{% if has_today_schedule %}
+<div class="card">
+    <h2>오늘 근무 배치</h2>
+    <div class="slot-grid">
+        {% for s in range(4) %}
+        <div class="slot-card">
+            <h3>{{ '%02d'|format(slot_24h[times[s]]) }}시</h3>
+            {% for l in range(4) %}
+            {% set names = by_slot_site[(s, l)] %}
+            <div class="site-row">
+                <strong>{{ site_names[l] }}</strong>
+                <span class="cap">({{ names|length }}/{{ place_cap[s][l] }})</span>
+                <div>{{ names|join(', ') if names else '—' }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    <p style="margin-top:1rem;">
+        <a href="/schedule/{{ today }}" class="btn secondary">상세 페이지 → (재생성, 개인별 보기)</a>
+    </p>
+</div>
+
+<div class="card">
+    <h2>오늘 OFF인 사람</h2>
+    {% set status_label = {'absent': '휴가/사고', 'outing': '외출', 'strike': '타격대', 'longnight': '긴밤자'} %}
+    {% set off_rows = per_person | rejectattr('1') | list %}
+    {% if off_rows %}
+        <ul style="list-style:none; padding:0; margin:0;">
+            {% for name, _slots in off_rows %}
+            {% set st = statuses.get(name) %}
+            <li style="padding: 0.3rem 0;">
+                <strong>{{ name }}</strong>
+                {% if st == 'absent' %}<span class="status-pill absent">휴가/사고</span>
+                {% elif st == 'outing' %}<span class="status-pill outing">외출</span>
+                {% elif st == 'strike' %}<span class="cell-strike" style="padding:0.1rem 0.5rem; border-radius:999px; font-size:0.75rem;">타격대</span>
+                {% else %}<span class="muted">(off)</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="muted">전원 근무 중입니다.</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>누적 통계</h2>
+    {% if days_recorded > 0 %}
+        <p>총 <strong>{{ days_recorded }}일</strong>의 근무 기록 (마지막: {{ last_date }})</p>
+        <a href="/ledger" class="btn secondary">상세 보기</a>
+    {% else %}
+        <p class="muted">아직 기록된 근무가 없습니다.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>빠른 액션</h2>
+    <p>
+        <a href="/schedules" class="btn secondary">근무표 목록 / 일괄 생성</a>
+        <a href="/calendar" class="btn secondary">달력</a>
+        <a href="/users" class="btn secondary">대원 관리</a>
+        <a href="/vacations" class="btn secondary">휴가 등록</a>
+        <a href="/outings" class="btn secondary">외출 계획</a>
+        <a href="/strikeforce" class="btn secondary">타격대</a>
+    </p>
+</div>
+{% endblock %}
