@@ -2,23 +2,31 @@
 web_app.py — FastAPI web UI for the 718 duty scheduler.
 
 Run:
-    /Users/js/.pyenv/versions/3.10.18/bin/python3 -m uvicorn web_app:app --reload
+    python -m uvicorn web_app:app --reload
 
 Then open http://127.0.0.1:8000
+
+SECURITY / DEPLOYMENT NOTE
+--------------------------
+This app has NO authentication. It is intended to be run on the LOCALHOST
+of one administrator's machine only. Do NOT expose it on a network interface
+(don't pass `--host 0.0.0.0`); if you need multi-user access, put a reverse
+proxy with auth in front. uvicorn's default bind is 127.0.0.1, which is
+the safe configuration.
 
 WHAT THIS FILE PROVIDES
 -----------------------
 A small browser-based UI for the whole workflow:
 
-  Dashboard           → today's group, link to schedule + recent activity
+  Dashboard           → today's group + today's schedule + combined auto-plan
   /users              → CRUD for the platoon roster (add, edit, deactivate, delete)
   /vacations          → manage vacation date ranges per person
-  /outings            → view and (re)plan outings for the upcoming week
-  /schedule/{date}    → view a stored schedule, or generate one if missing
-
-The HTML is server-rendered with Jinja2; HTMX handles interactivity (form
-submits, inline deletes) without a separate JS bundle. There is no auth —
-this is intended for local single-user use.
+  /outings            → view and (re)plan outings for upcoming weeks
+  /strikeforce        → manage 타격대 (quick-reaction force) rotation + settings
+  /calendar           → grid view of vacation/outing/strike-force by person × day
+  /schedules          → list saved schedules, bulk-generate by date range
+  /schedule/{date}    → view or generate a single day's schedule
+  /ledger             → cumulative work-count statistics
 
 DESIGN NOTES
 ------------
@@ -56,6 +64,10 @@ from solver import (
 
 app = FastAPI(title="718 Duty Scheduler")
 app.mount('/static', StaticFiles(directory='static'), name='static')
+# Jinja2Templates uses jinja2.select_autoescape() by default — autoescape is
+# ON for .html / .xml files. Confirmed by inspecting `templates.env.autoescape`.
+# No template uses `|safe`, `|raw`, or `{% autoescape false %}`, so all
+# user-supplied strings (names, notes) are HTML-escaped.
 templates = Jinja2Templates(directory='templates')
 
 

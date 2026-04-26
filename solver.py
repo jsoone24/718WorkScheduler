@@ -60,6 +60,11 @@ SITE_NAMES = ['정출', '별정', '별후', '서남문']
 NUM_SITES = 4
 NUM_SLOTS = 4
 
+# Hard wall-clock cap on a single solve. Typical real-world inputs converge
+# in tens of milliseconds; this only guards against pathological corner cases
+# (e.g., a malformed input that happens to be near-infeasible).
+SOLVER_TIMEOUT_SECONDS = 30.0
+
 # Status codes. Use these strings (or the constants below) when building the
 # `statuses` dict you pass to solve_day().
 STATUS_NORMAL = 'normal'
@@ -332,6 +337,10 @@ def solve_day(
         solver.parameters.random_seed = seed
     # Single-threaded: required for the seed to fully determine the result.
     solver.parameters.num_search_workers = 1
+    # Hard wall-clock cap so a malformed input or a pathological corner case
+    # cannot pin a worker thread indefinitely. Real days converge in well
+    # under a second; 30s is generous and still bounded.
+    solver.parameters.max_time_in_seconds = SOLVER_TIMEOUT_SECONDS
 
     status = solver.Solve(model)
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
