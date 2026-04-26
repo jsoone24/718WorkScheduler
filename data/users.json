@@ -1,0 +1,863 @@
+[
+  {
+    "id": 1,
+    "name": "김호송",
+    "active": true,
+    "display_order": 0,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          8
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          4
+        ],
+        "times2": [
+          8,
+          4
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          6,
+          22
+        ],
+        "times2": [
+          2,
+          22
+        ]
+      }
+    }
+  },
+  {
+    "id": 2,
+    "name": "김수현",
+    "active": true,
+    "display_order": 1,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          4,
+          8
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 3,
+    "name": "고동욱",
+    "active": true,
+    "display_order": 2,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          8
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          4
+        ],
+        "times2": [
+          8,
+          4
+        ]
+      },
+      "C": {
+        "times3": [
+          2,
+          6,
+          22
+        ],
+        "times2": [
+          2,
+          22
+        ]
+      }
+    }
+  },
+  {
+    "id": 4,
+    "name": "이민혁",
+    "active": true,
+    "display_order": 3,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          4
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 5,
+    "name": "김건웅",
+    "active": true,
+    "display_order": 4,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          8,
+          12
+        ],
+        "times2": [
+          6,
+          8
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          12,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          6,
+          22
+        ],
+        "times2": [
+          6,
+          22
+        ]
+      }
+    }
+  },
+  {
+    "id": 6,
+    "name": "한종수",
+    "active": true,
+    "display_order": 5,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          8
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          6
+        ]
+      }
+    }
+  },
+  {
+    "id": 7,
+    "name": "김주환",
+    "active": true,
+    "display_order": 6,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          4
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          4
+        ],
+        "times2": [
+          8,
+          4
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 8,
+    "name": "하석준",
+    "active": true,
+    "display_order": 7,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          8,
+          12
+        ],
+        "times2": [
+          6,
+          8
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          4
+        ],
+        "times2": [
+          12,
+          4
+        ]
+      },
+      "C": {
+        "times3": [
+          2,
+          6,
+          22
+        ],
+        "times2": [
+          2,
+          22
+        ]
+      }
+    }
+  },
+  {
+    "id": 9,
+    "name": "이정찬",
+    "active": true,
+    "display_order": 8,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          4
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          6,
+          22
+        ]
+      }
+    }
+  },
+  {
+    "id": 10,
+    "name": "연상헌",
+    "active": true,
+    "display_order": 9,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          4
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 11,
+    "name": "유재열",
+    "active": true,
+    "display_order": 10,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          8
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          22
+        ],
+        "times2": [
+          10,
+          22
+        ]
+      }
+    }
+  },
+  {
+    "id": 12,
+    "name": "박준규",
+    "active": true,
+    "display_order": 11,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          4
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 13,
+    "name": "안창원",
+    "active": true,
+    "display_order": 12,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          8,
+          12
+        ],
+        "times2": [
+          8,
+          12
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          4
+        ],
+        "times2": [
+          12,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          2,
+          6,
+          22
+        ],
+        "times2": [
+          2,
+          22
+        ]
+      }
+    }
+  },
+  {
+    "id": 14,
+    "name": "이기훈",
+    "active": true,
+    "display_order": 13,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          4
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 15,
+    "name": "이승빈",
+    "active": true,
+    "display_order": 14,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          4
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 16,
+    "name": "이유준",
+    "active": true,
+    "display_order": 15,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          4
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 17,
+    "name": "유준상",
+    "active": true,
+    "display_order": 16,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          4
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          12,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 18,
+    "name": "전명재",
+    "active": true,
+    "display_order": 17,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          4
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 19,
+    "name": "김홍익",
+    "active": true,
+    "display_order": 18,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          4,
+          8
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          6
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 20,
+    "name": "최정우",
+    "active": true,
+    "display_order": 19,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          8
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          12,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          22
+        ],
+        "times2": [
+          10,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "id": 21,
+    "name": "최의현",
+    "active": true,
+    "display_order": 20,
+    "preferences": {
+      "A": {
+        "times3": [
+          6,
+          4,
+          8
+        ],
+        "times2": [
+          6,
+          8
+        ]
+      },
+      "B": {
+        "times3": [
+          8,
+          12,
+          2
+        ],
+        "times2": [
+          8,
+          2
+        ]
+      },
+      "C": {
+        "times3": [
+          10,
+          2,
+          22
+        ],
+        "times2": [
+          6,
+          22
+        ]
+      }
+    }
+  }
+]

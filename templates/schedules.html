@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}근무표 목록{% endblock %}
+{% block content %}
+<h1>근무표</h1>
+
+{% if bulk_summary %}
+<div class="card" style="background:#f0fdf4; border-left:4px solid #16a34a;">
+    <strong>일괄 생성 결과</strong> —
+    생성 {{ bulk_summary.ok }}일 ·
+    이미 있어서 건너뜀 {{ bulk_summary.skip }}일 ·
+    실패 {{ bulk_summary.fail }}일
+    {% if bulk_summary.fail > 0 %}
+    <p class="muted" style="margin-top:0.5rem;">
+        실패한 날은 보통 활성 인원 대비 demand가 너무 커서 그래요.
+        해당 날짜를 직접 들어가서 휴가/외출을 더 등록한 후 재시도하세요.
+    </p>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if wiped %}
+<div class="card" style="background:#fef3c7; border-left:4px solid #d97706;">
+    <strong>모든 근무표와 통계를 초기화했습니다.</strong>
+    이제 아래 "일괄 생성"으로 다시 만들면 현재 룰(균형 제약 + 타격대 크레딧)로 새로 계산됩니다.
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>날짜 선택</h2>
+    <form method="get" action="" onsubmit="event.preventDefault(); window.location='/schedule/' + this.date.value;" class="inline">
+        <div>
+            <label for="single_date">조회할 날짜</label>
+            <input type="date" id="single_date" name="date" value="{{ today }}" required>
+        </div>
+        <button type="submit">근무표 보기</button>
+        <p class="muted" style="margin: 0;">
+            아직 생성 안 된 날짜를 고르면 그 페이지에서 생성 버튼이 뜹니다.
+        </p>
+    </form>
+</div>
+
+<div class="card">
+    <h2>일괄 생성</h2>
+    <p class="muted">
+        지정한 범위의 모든 날짜에 대해 근무표를 한꺼번에 생성합니다.
+        이미 저장된 날짜는 건너뜁니다 (덮어쓰지 않음).
+        공정성 통계는 시간순으로 누적되어 적용됩니다. 최대 60일.
+    </p>
+    <form action="/schedules/generate-range" method="post" class="inline">
+        <div>
+            <label for="range_start">시작일</label>
+            <input type="date" id="range_start" name="start" value="{{ default_range_start }}" required>
+        </div>
+        <div>
+            <label for="range_end">종료일</label>
+            <input type="date" id="range_end" name="end" value="{{ default_range_end }}" required>
+        </div>
+        <button type="submit">범위 생성 실행</button>
+    </form>
+</div>
+
+<div class="card" style="background:#fef2f2; border-left:4px solid #dc2626;">
+    <h2 style="margin-top:0;">전체 초기화 (위험)</h2>
+    <p class="muted">
+        저장된 모든 근무표와 누적 통계를 삭제합니다. 외출/휴가/타격대/대원 정보는 유지됩니다.
+        룰이 바뀌어 기존 데이터와 안 맞을 때 (예: 균형 제약 도입 후) 사용하세요.
+    </p>
+    <form action="/schedules/wipe" method="post"
+          onsubmit="return confirm('정말 모든 근무표와 통계를 초기화하시겠습니까? 이 동작은 되돌릴 수 없습니다.');">
+        <button type="submit" class="danger">모든 근무표 + 통계 초기화</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>저장된 근무표</h2>
+    {% if by_month %}
+        {% for ym, scheds in by_month.items() %}
+        <h3 style="margin-top:1.5rem;">{{ ym }} ({{ scheds|length }}일)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>날짜</th>
+                    <th>요일</th>
+                    <th>조</th>
+                    <th>구분</th>
+                    <th>근무 인원</th>
+                    <th>총 슬롯</th>
+                    <th>액션</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in scheds %}
+                {% set wd = s.date.weekday() %}
+                <tr>
+                    <td><strong>{{ s.date }}</strong></td>
+                    <td class="{% if wd == 5 %}sat{% elif wd == 6 %}sun{% endif %}">
+                        {% if wd == 0 %}월
+                        {% elif wd == 1 %}화
+                        {% elif wd == 2 %}수
+                        {% elif wd == 3 %}목
+                        {% elif wd == 4 %}금
+                        {% elif wd == 5 %}토
+                        {% else %}일
+                        {% endif %}
+                    </td>
+                    <td>{{ s.group }}조</td>
+                    <td>
+                        {% if s.is_weekend %}
+                            <span class="status-pill outing">주말</span>
+                        {% else %}
+                            <span class="status-pill active">평일</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ s.active_count }}명</td>
+                    <td>{{ s.total_slots }}</td>
+                    <td>
+                        <a href="/schedule/{{ s.date }}" class="btn small secondary">보기</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endfor %}
+    {% else %}
+        <p class="muted">아직 생성된 근무표가 없습니다. 위에서 날짜를 선택해 생성하세요.</p>
+    {% endif %}
+</div>
+{% endblock %}
