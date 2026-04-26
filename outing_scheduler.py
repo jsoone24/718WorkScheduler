@@ -54,20 +54,16 @@ from datetime import date, timedelta
 from typing import List, Optional, Tuple
 
 from constants import placetable
+from domain import today_group
 from store import (
     User, Outing, active_users, vacation_user_ids_on, outing_user_ids_on,
     strikeforce_user_ids_on, load_ledger, next_outing_id,
 )
 
 
-def _compute_today_group(d: date) -> int:
-    rotation_start = date(2020, 1, 1)
-    return ((d - rotation_start).days + 1) % 3
-
-
 def _capacity_for(d: date) -> int:
     """Total person-slots demanded on date d (sum of all site capacities)."""
-    g = _compute_today_group(d)
+    g = today_group(d)
     weekend_idx = 1 if d.weekday() >= 5 else 0
     cap = placetable[g][weekend_idx]
     return sum(cap[s][l] for s in range(4) for l in range(4))
@@ -205,35 +201,35 @@ def plan_week(
 
     chosen: List[OutingPlan] = []
     assigned_ids: set = set()
-    sat_remaining = sat_spare
-    sun_remaining = sun_spare
+    # `remaining` is mutated in-place as we hand out outings. Keeping it as
+    # a single dict (instead of two free locals + a closure) makes the
+    # mutation site obvious from reading the loop body.
+    remaining = {'sat': sat_spare, 'sun': sun_spare}
 
     sat_vac = vacation_user_ids_on(saturday) | strikeforce_user_ids_on(saturday)
     sun_vac = vacation_user_ids_on(sunday) | strikeforce_user_ids_on(sunday)
+    vac_for = {'sat': sat_vac, 'sun': sun_vac}
 
-    def _can_go(user_id: int, day_label: str) -> bool:
-        """Is this user free to take an outing on this weekend day?
-        Excludes vacation AND strike-force standby."""
-        if day_label == 'sat':
-            return user_id not in sat_vac and sat_remaining > 0
-        return user_id not in sun_vac and sun_remaining > 0
+    def can_take(user_id: int, day_label: str) -> bool:
+        """User is free for `day_label` if not on vacation/SF AND day has spare."""
+        return user_id not in vac_for[day_label] and remaining[day_label] > 0
 
     for user in pool:
         if user.id in assigned_ids:
             continue  # already placed (defensive)
 
-        first, second = _preferred_day_for(user, ledger, sat_remaining, sun_remaining)
-        target = None
-        # Try first choice, then fall back to second. Skip a day if the user is
-        # on vacation that specific day (don't assign someone an outing on a
-        # day they're already absent — that would just stack absences).
-        if _can_go(user.id, first):
+        first, second = _preferred_day_for(
+            user, ledger, remaining['sat'], remaining['sun'],
+        )
+        # Try first choice, then fall back to second. Skip days where the
+        # user is on vacation/strike — assigning an outing on top of an
+        # existing absence would just stack absences.
+        if can_take(user.id, first):
             target = first
-        elif _can_go(user.id, second):
+        elif can_take(user.id, second):
             target = second
-
-        if target is None:
-            continue  # no weekend day works for this person — weekday fallback below
+        else:
+            continue   # no weekend day works for them; weekday fallback below
 
         day_date = saturday if target == 'sat' else sunday
         kind = 'weekend_sat' if target == 'sat' else 'weekend_sun'
@@ -245,10 +241,7 @@ def plan_week(
             reason=f"{kind} (last outing: {_last_outing(ledger, user.name)})",
         ))
         assigned_ids.add(user.id)
-        if target == 'sat':
-            sat_remaining -= 1
-        else:
-            sun_remaining -= 1
+        remaining[target] -= 1
 
     # Weekday fallback: anyone STILL unassigned (couldn't fit on Sat or Sun)
     # gets pushed to a weekday outing the following week, if any weekday has

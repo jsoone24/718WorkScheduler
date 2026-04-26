@@ -2,18 +2,22 @@
 Main_program.py — CLI entry point for the 718 daily duty scheduler.
 
 This is the command-line driver. The same logic is also exposed via the web
-app (web_app.py); both share solver.py / ledger.py / store.py underneath.
+app (web_app.py); both share solver.py / ledger.py / store.py underneath via
+the small helper module domain.py.
 
 USAGE
 -----
     python Main_program.py
 
-It pulls today's roster (active users, vacations, outings) from data/*.json
-and prints the schedule. The web app is the recommended way to manage data.
+It pulls today's roster (active users, vacations, outings, strike-force) from
+data/*.json and prints the schedule. The web app is the recommended way to
+manage data; this CLI exists for quick smoke checks and for users who prefer
+the terminal.
 """
 
 import datetime
 
+import domain
 import ledger
 import store
 from constants import work_group
@@ -31,53 +35,30 @@ from solver import (
 # Set this to schedule a different day. Defaults to today.
 TODAY = datetime.date.today()
 
-# Optional: override if you want to set 긴밤자 manually for the day. The web
-# app will eventually let you pick this from the UI.
-LONG_NIGHT_NAMES: list[str] = []
-
-
-def compute_today_group(d: datetime.date) -> int:
-    """0=A, 1=B, 2=C. Anchored on 2020-01-01 = Group B."""
-    rotation_start = datetime.date(2020, 1, 1)
-    return ((d - rotation_start).days + 1) % 3
-
-
-def build_statuses(d: datetime.date, active_users: list) -> dict:
-    """Combine vacation + outing data from the store into a status dict."""
-    vacation_ids = store.vacation_user_ids_on(d)
-    outing_ids = store.outing_user_ids_on(d)
-    active_by_id = {u.id: u for u in active_users}
-
-    statuses: dict[str, str] = {}
-    for uid in vacation_ids:
-        u = active_by_id.get(uid)
-        if u:
-            statuses[u.name] = STATUS_ABSENT
-    for uid in outing_ids:
-        u = active_by_id.get(uid)
-        if u:
-            statuses[u.name] = STATUS_OUTING
-    for name in LONG_NIGHT_NAMES:
-        statuses[name] = STATUS_LONGNIGHT
-    return statuses
+# Optional: explicitly mark some active users as 긴밤자 (long-night) for the
+# day. Useful for the CLI flow only — the web app does not surface this yet.
+# Names must match `User.name` exactly. Only meaningful in Group B.
+LONG_NIGHT_NAMES: set[str] = set()
 
 
 def main() -> None:
-    today_group = compute_today_group(TODAY)
+    today_group = domain.today_group(TODAY)
     is_weekend = TODAY.weekday() >= 5
 
     active = store.active_users()
-    statuses = build_statuses(TODAY, active)
+    statuses = domain.build_statuses(TODAY, active, longnight_names=LONG_NIGHT_NAMES)
 
     weekend_label = '주말' if is_weekend else '평일'
     print(f"Date  : {TODAY} ({work_group[today_group]}조, {weekend_label})")
     print(f"Active users: {len(active)}")
     absents = [n for n, s in statuses.items() if s == STATUS_ABSENT]
     outings = [n for n, s in statuses.items() if s == STATUS_OUTING]
+    strike = [n for n, s in statuses.items() if s == STATUS_STRIKE]
     longnight = [n for n, s in statuses.items() if s == STATUS_LONGNIGHT]
-    print(f"  Absent ({len(absents):>2}): {', '.join(absents) if absents else '(none)'}")
-    print(f"  Outing ({len(outings):>2}): {', '.join(outings) if outings else '(none)'}")
-    print(f"  긴밤   ({len(longnight):>2}): {', '.join(longnight) if longnight else '(none)'}")
+    print(f"  사고/휴가 ({len(absents):>2}): {', '.join(absents) if absents else '(none)'}")
+    print(f"  외출      ({len(outings):>2}): {', '.join(outings) if outings else '(none)'}")
+    print(f"  타격대    ({len(strike):>2}): {', '.join(strike) if strike else '(none)'}")
+    print(f"  긴밤      ({len(longnight):>2}): {', '.join(longnight) if longnight else '(none)'}")
 
     issues = feasibility_report(today_group, is_weekend, active, statuses)
     if issues:
@@ -87,32 +68,27 @@ def main() -> None:
 
     book = store.load_ledger()
     today_str = TODAY.isoformat()
-    if book.get('last_date') == today_str:
+    if today_str in book.get('recorded_dates', []):
         print(f"\n알림: 통계에 이미 {today_str} 기록이 있습니다. "
-              f"재실행 시 중복 집계됩니다.")
+              f"재실행 시 중복 집계되지 않으며, 같은 결과가 표시됩니다.")
 
     schedule = solve_day(
         today_group, is_weekend, active, statuses,
         work_count_before=ledger.work_count_for_solver(book, active),
     )
     if schedule is None:
-        print("\nNo feasible schedule found. Adjust the roster and try again.")
+        print("\n실현 가능한 근무표가 없습니다. 휴가/외출/타격대 인원을 조정해 주세요.")
         return
 
     print_schedule(schedule, today_group, is_weekend)
 
-    # Persist the schedule and bump the ledger
+    # Persist the schedule and bump the ledger (idempotent on the same date
+    # via `recorded_dates` inside ledger.update).
     store.save_schedule(TODAY, work_group[today_group], is_weekend, schedule)
-    # `candidates` = people who actually showed up for regular duty today.
-    # `sf_users`   = strike-force standby (credited as work for fairness).
-    away_today = {
-        n for n, s in statuses.items()
-        if s in (STATUS_ABSENT, STATUS_OUTING, STATUS_STRIKE)
-    }
-    candidates = [u for u in active if u.name not in away_today]
-    sf_names = {n for n, s in statuses.items() if s == STATUS_STRIKE}
-    sf_users = [u for u in active if u.name in sf_names]
-    ledger.update(book, schedule, candidates, today_group, today_str, sf_users=sf_users)
+    candidates, sf_users = domain.split_for_ledger(active, statuses)
+    ledger.update(
+        book, schedule, candidates, today_group, today_str, sf_users=sf_users,
+    )
     store.save_ledger(book)
     ledger.print_summary(book)
 
